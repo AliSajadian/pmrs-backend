@@ -16,10 +16,12 @@ class ContractSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ContractSerializerEx(serializers.ModelSerializer):
-    # roles = serializers.ReadOnlyField() , 'roles'
+    contracttype = serializers.ReadOnlyField() 
+    currency = serializers.ReadOnlyField()
+    
     class Meta:
         model = Contract
-        fields = ['contractid', 'contract']
+        fields = ['contractid', 'contracttypeid', 'contracttype', 'contract', 'currency']
         
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,28 +37,30 @@ class PersonelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Personel
         fields = '__all__'
-        
+
 class ContractBaseInfoSerializer(serializers.ModelSerializer):
-    totalprice_r = serializers.ReadOnlyField()
-    totalprice_fc = serializers.ReadOnlyField()
+    contractamount_r_ = serializers.ReadOnlyField()
+    contractamount_fc_ = serializers.ReadOnlyField()
+    extraWorkPrice_r = serializers.ReadOnlyField()
+    extraWorkPrice_fc = serializers.ReadOnlyField()
     projectManager = serializers.ImageField
     projectManagerImage = serializers.ReadOnlyField()
     customer = serializers.ReadOnlyField()
     currency = serializers.ReadOnlyField()
     passedDuration = serializers.ReadOnlyField()
     addendumDuration =  serializers.ReadOnlyField()
+    planStartShamsiDate = serializers.ReadOnlyField()
+    finishShamsiDate = serializers.ReadOnlyField()
+    approximateFinishShamsiDate = serializers.ReadOnlyField()
     
     class Meta:
         model = Contract
-        fields = ('contractid', 'totalprice_r', 'totalprice_fc', 'projectManager', 'projectManagerImage', 
-                  'customer', 'currency', 'startoperationdate', 'notificationdate', 'planstartdate', 
-                  'finishdate', 'duration', 'passedDuration', 'addendumDuration',
-                #   'attachmentcontractprice1_r', 'attachmentcontractprice1_fc', 
-                #   'attachmentcontractprice2_r', 'attachmentcontractprice2_fc', 
-                #   'attachmentcontractprice3_r', 'attachmentcontractprice3_fc', 
-                #   'attachmentcontractprice4_r', 'attachmentcontractprice4_fc', 
-                #   'attachmentcontractprice5_r', 'attachmentcontractprice5_fc'
-                  )
+        fields = ('contractid', 'contract', 'contractamount_r', 'contractamount_r_', 'extraWorkPrice_r', 
+                  'contractamount_fc', 'contractamount_fc_', 'extraWorkPrice_fc', 'projectmanagerid', 'projectManager', 
+                  'projectManagerImage', 'customer', 'currency', 'startoperationdate', 'notificationdate', 'planstartdate', 
+                  'finishdate', 'duration', 'passedDuration', 'addendumDuration', 'planStartShamsiDate', 'finishShamsiDate', 
+                  'approximateFinishShamsiDate', 'location', 'longitude', 'latitude'
+                 )
 
 class ContractBaseInfoEditSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,9 +81,11 @@ class ContractConsultantSerializer(serializers.ModelSerializer):
         fields = ('consultantid', 'consultant')
         
 class ContractAddendumSerializer(serializers.ModelSerializer):
+    afteraddendumshamsidate = serializers.ReadOnlyField()
+    
     class Meta:
         model = Addendum
-        fields = '__all__'
+        fields = ('addendumid', 'contractid', 'addendumamount_r', 'addendumamount_fc', 'afteraddendumdate', 'afteraddendumshamsidate')
 
                 
 # class EPCDictField(serializers.DictField):
@@ -102,7 +108,7 @@ class ContractAddendumSerializer(serializers.ModelSerializer):
 #         fields = ('E', 'P', 'C')
 
 class ItemSerializer(serializers.Serializer):
-    label = serializers.CharField()
+    name = serializers.CharField()
     value = serializers.FloatField()
 
 class EpcCorporationSerializer(serializers.ModelSerializer):

@@ -1,14 +1,17 @@
 import mimetypes
 from django.http import FileResponse
-from django.db.models import Max, Q
+from django.db.models import Max, Q, F
+from django.contrib.auth import get_user_model
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
+from accounts.models import UserRole
 
 from projects_files.models import *
 from projects_files.serializers import *
+from projects_files.services import SetReportVisit
 
 
 class HseReportDoxAPI(viewsets.ModelViewSet):
@@ -22,7 +25,7 @@ class HseReportDoxAPI(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def contractList(self, request, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
+            contractId = int(kwargs["contractid"])
             hseReportDox = HseReportDox.objects.filter(contractid__exact=contractId)
             serializer = HseReportDoxSerializers(instance=hseReportDox, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -147,7 +150,14 @@ class ProjectDoxAPI(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def contractList(self, request, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
+            # data = request.data
+            userId = int(kwargs["userid"])
+            contractId = int(kwargs["contractid"])
+            dateId = int(kwargs["dateid"])
+            reportId = int(kwargs["reportid"])
+            
+            SetReportVisit(userId, contractId, dateId, reportId)            
+            
             projectDox = ProjectDox.objects.filter(contractid__exact=contractId)
             serializer = ProjectDoxSerializers(instance=projectDox, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -173,7 +183,7 @@ class ProjectDoxAPI(viewsets.ModelViewSet):
  
  
 class ContractorDoxAPI(viewsets.ModelViewSet):
-    queryset = ContractDox.objects.all()
+    queryset = ContractorDox.objects.all()
     serializer_class = ContractorDoxSerializers
     permission_classes = [
         permissions.IsAuthenticated
@@ -183,8 +193,8 @@ class ContractorDoxAPI(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def contractList(self, request, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
-            contractorDox = ContractDox.objects.filter(contractid__exact=contractId)
+            contractId = int(kwargs["contractid"])
+            contractorDox = ContractorDox.objects.filter(contractid__exact=contractId)
             serializer = ContractorDoxSerializers(instance=contractorDox, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
@@ -194,7 +204,7 @@ class ContractorDoxAPI(viewsets.ModelViewSet):
     def download(self, request, *args, **kwargs):
         try:
             id = int(kwargs["id"])
-            contractorDox = ContractDox.objects.get(pk=id)
+            contractorDox = ContractorDox.objects.get(pk=id)
             if contractorDox.file:
                 storage, path = contractorDox.file.storage, contractorDox.file.path
                 mimetype, _ = mimetypes.guess_type(contractorDox.file.path)
@@ -219,7 +229,14 @@ class ProjectMonthlyDoxAPI(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def contractList(self, request, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
+            # data = request.data
+            userId = int(kwargs["userid"])
+            contractId = int(kwargs["contractid"])
+            dateId = int(kwargs["dateid"])
+            reportId = int(kwargs["reportid"])
+            
+            SetReportVisit(userId, contractId, dateId, reportId)            
+            
             projectMonthlyDox = ProjectMonthlyDox.objects.filter(contractid__exact=contractId)
             serializer = ProjectMonthlyDoxSerializers(instance=projectMonthlyDox, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -255,8 +272,8 @@ class ApprovedInvoiceDoxAPI(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def contractMonthList(self, request, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
-            dateId = int(kwargs["date_id"])
+            contractId = int(kwargs["contractid"])
+            dateId = int(kwargs["dateid"])
             approvedInvoiceDox = InvoiceDox.objects.filter(contractid__exact=contractId, dateid__exact=dateId)
             serializer = ApprovedInvoiceDoxSerializers(instance=approvedInvoiceDox, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -305,25 +322,56 @@ class ReportDoxAPI(APIView):
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
- 
-class ReportVisitAPI(viewsets.ModelViewSet):
-    queryset = ReportVisit.objects.all()
-    serializer_class = ReportVisitSerializers
+
+class ZoneAPI(viewsets.ModelViewSet):
+    queryset = Zone.objects.all()
+    serializer_class = ZoneSerializers
     permission_classes = [
         permissions.IsAuthenticated
     ]
-    
+
     @action(detail=True, methods=['get'])
-    def contractMonthList(self, request, *args, **kwargs):
+    def contractZoneList(self, request, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
-            dateId = int(kwargs["date_id"])
-            approvedInvoiceDox = ReportVisit.objects.filter(contractid__exact=contractId, dateid__exact=dateId)
-            serializer = ReportVisitSerializers(instance=approvedInvoiceDox, many=True)
+            contractId = int(kwargs["contractid"])
+            zones = Zone.objects.filter(contractid__exact=contractId)
+            serializer = ZoneSerializers(instance=zones, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+ 
+@api_view(['post'])
+@permission_classes([permissions.IsAuthenticated])
+def getContractZoneImages(request):
+    try:
+        data = request.data
+        userId = int(data["userid"])
+        contractId = int(data["contractid"])
+        dateId = int(data["dateid"])
+        reportId = int(data["reportid"])
+        
+        SetReportVisit(userId, contractId, dateId, reportId) 
+               
+        last_dateId = ReportDate.objects.filter(dateid__lt=dateId).aggregate(Max('dateid'))['dateid__max']
+        
+        count = ZoneImage.objects.filter(zoneid__contractid__exact=contractId, dateid__exact=dateId)
+        
+        if count == 0:
+            zones = Zone.objects.filter(contractid__exact=contractId, Zone_Zoneimage__dateid__exact=last_dateId) 
+                                            #  dateid__exact=last_dateId).exclude(Q(img1__exact=None) | 
+                                            #                            Q(img2__exact=None) | 
+                                            #                            Q(img3__exact=None)).values('zoneid')
+        
+            date = ReportDate.objects.get(pk=dateId)
+            for zone in zones:
+                ZoneImage.objects.create(zoneid=zone, dateid=date)
+            
+        zoneImage = ZoneImage.objects.filter(zoneid__contractid__exact=contractId, dateid__exact=dateId)
+        serializer = ZoneImagesSerializers(instance=zoneImage, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['put'])
 @permission_classes([permissions.IsAuthenticated])
@@ -381,8 +429,8 @@ class ZoneImagesAPI(APIView):
 
     def get(self, *args, **kwargs):
         try:
-            contractId = int(kwargs["contract_id"])
-            dateId = int(kwargs["date_id"])
+            contractId = int(kwargs["contractid"])
+            dateId = int(kwargs["dateid"])
             
             last_dateId = ReportDate.objects.filter(dateid__lt=dateId).aggregate(Max('dateid'))['dateid__max']
             
@@ -525,3 +573,260 @@ class ZoneImagesAPI(APIView):
     #         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
     #     except Exception as e:
     #         return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['get'])
+@permission_classes([permissions.IsAuthenticated])
+def getReportProjectZoneImages(request, zoneid):
+    try:
+        zoneId = zoneid
+        zoneImages = ZoneImage.projectZoneImages.projectZoneImages(zoneId)
+        serializer = ProjectZoneImagesSerializers(instance=zoneImages, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['get'])
+@permission_classes([permissions.IsAuthenticated])
+def getReportProjectAllZonesImages(request, contractid):
+    try:
+        contractId = contractid
+        zoneImages = ZoneImage.projectZoneImages.projectAllZonesImages(contractId)
+        serializer = ProjectZoneImagesSerializers(instance=zoneImages, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['get'])
+@permission_classes([permissions.IsAuthenticated])
+def getReportAllProjectZonesImages(request):
+    try:
+        zoneImages = ZoneImage.projectZoneImages.allProjectZonesImages()
+        serializer = ProjectZoneImagesSerializers(instance=zoneImages, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ReportVisitAPI(APIView):
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
+
+    def get(self, *args, **kwargs):
+        try:
+            contractId = int(kwargs["contractid"])
+            dateId = int(kwargs["dateid"])
+                        
+            reportVisits = ReportVisit.objects.filter(contractid__exact=contractId, dateid__exact=dateId)
+            
+            serializer = ReportVisitSerializers(instance=reportVisits, many=True)
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    
+    def post(self, request):
+        try:
+            data = request.data
+            contractId = int(data["contractid"])
+            dateId = int(data["dateid"])
+            userId = int(data["userid"])
+            reportId = int(data["reportid"])
+            
+            user = get_user_model().objects.get(pk=userId)
+            date = ReportDate.objects.get(pk=dateId)
+
+            if(contractId == -1):
+                reportVisits = ReportVisit.objects.filter(userid__exact=userId, dateid__exact=dateId)
+                reportVisits.update(imagereport=1)
+                
+                isAllProject = UserRole.objects.filter(userid__exact=userId, contractid__exact=None).count() > 0
+                
+                if isAllProject:
+                    contracts = Contract.objects.filter(iscompleted__exact=False).exclude(contractid__in=reportVisits)
+                    for contract in contracts:
+                        ReportVisit.objects.update_or_create(contractid=contract, dateid=date, userid=user, imagereport=1)
+                else:
+                    userContractRole = UserRole.objects.filter(userid__exact=userId)
+                    contracts = Contract.objects.filter(contractid__in=userContractRole).exclude(contractid__in=reportVisits)
+                    for contract in contracts:
+                        ReportVisit.objects.update_or_create(contractid=contract, dateid=date, userid=user, imagereport=1)
+            else: 
+                contracts = Contract.objects.filter(contractid__exact=contractId)
+                if len(contracts) == 1:
+                        if reportId == 1:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "financialinfo": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+  
+                        elif reportId == 2:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "hse": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+ 
+                        elif reportId == 3:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "progressstate": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+ 
+                        elif reportId == 4:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "timeprogressstate": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+ 
+                        elif reportId == 5:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "invoice": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+ 
+                        elif reportId == 6:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "financialinvoice": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+  
+                        elif reportId == 7:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "workvolume": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+            
+                        elif reportId == 8:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "pmsprogress": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+                            
+                        elif reportId == 9:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "budget": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+
+                        elif reportId == 10:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "machinary": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId}) 
+ 
+                        elif reportId == 11:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "personel": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+ 
+                        elif reportId == 12:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "problems": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+       
+                        elif reportId == 13:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "criticalactions": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+
+                        elif reportId == 14:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "zoneimages": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+                            
+                        elif reportId == 15:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "projectdox": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+                            
+                        elif reportId == 16:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "durationdox": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+
+                        elif reportId == 17:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "dashboard_r": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+
+                        elif reportId == 18:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "dashboard_fc": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+                            
+                        elif reportId == 19:
+                            reportVisit, _ = ReportVisit.objects.update_or_create(
+                                contractid=contracts[0], dateid=date, userid=user, 
+                                defaults={"contractid": contracts[0], "dateid": date, "userid": user, "imagereport": 1})
+
+                            ReportVisitdate.objects.update_or_create(
+                                visitreportid=reportVisit, reportid=reportId,
+                                defaults={"visitreportid":reportVisit, "reportid":reportId})
+                                             
+            return Response({"status": "success"}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            

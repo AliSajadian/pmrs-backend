@@ -28,7 +28,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1']
 
-CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ORIGIN_WHITELIST = [
+     'http://localhost:5173', # The default port for create-react-app
+]
 
 # RECAPTCHA_PUBLIC_KEY = 'your-public-key'
 # RECAPTCHA_PRIVATE_KEY = 'your-private-key'
@@ -79,28 +83,28 @@ ROOT_URLCONF = 'main.urls'
 
 ADMIN_ORDERING = [
     ('accounts', [
-        'PmrsUser',
         # 'User',
-        'Role',
         'Permission',
+        'Role',
         'RolePermission',
+        'PmrsUser',
         'UserRole',
      ]
      ),
      ('contracts', [
+        # 'Country',
+        'Currency',
         'CompanyType',
         'Company',
         # 'PersonelType',
         # 'Personel',
-        'Country',
-        'Currency',
         'ContractType',
         'Contract',
         # 'ContractUser',
-        'Corporation',
+        'EpcCorporation',
         'ContractConsultant',
         # 'ContractCurrencies',
-        'Addendum',
+        # 'Addendum',
      ]
     ),
 ]
@@ -117,7 +121,7 @@ STORAGES = {
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        "DIRS": [os.path.join(BASE_DIR, "templates"), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -172,6 +176,16 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# PASSWORD_HASHERS = (
+#     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+#     'django.contrib.auth.hashers.BCryptPasswordHasher',
+#     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+#     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+#     'django.contrib.auth.hashers.SHA1PasswordHasher',
+#     'django.contrib.auth.hashers.MD5PasswordHasher',
+#     'django.contrib.auth.hashers.CryptPasswordHasher',
+# )
 
 AUTH_USER_MODEL = 'accounts.PmrsUser'
 

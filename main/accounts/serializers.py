@@ -71,13 +71,44 @@ class UserPermissionsExSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ('id', 'username', 'first_name', 'last_name', 'user_permissions')    
         
-        
 class UserContractPermissionsSerializers(serializers.ModelSerializer):
     permissions = serializers.ReadOnlyField()
+    board = serializers.ReadOnlyField()
+    admin = serializers.ReadOnlyField()
+    
     class Meta:
         model = UserRole
-        fields = ['userid', 'contractid', 'permissions']
+        fields = ['userid', 'projectid', 'board', 'admin', 'permissions']
         
+class ProjectConfirmersSerializers(serializers.ModelSerializer):
+    project_manager = serializers.ReadOnlyField()
+    financialInfo_confirmor = serializers.ReadOnlyField()
+    hse_confirmor = serializers.ReadOnlyField()
+    progressState_confirmor = serializers.ReadOnlyField()
+    timeProgressState_confirmor = serializers.ReadOnlyField()
+    invoice_confirmor = serializers.ReadOnlyField()
+    financialInvoice_confirmor = serializers.ReadOnlyField()
+    workVolume_confirmor = serializers.ReadOnlyField()
+    pmsProgress_confirmor = serializers.ReadOnlyField()
+    budget_confirmor = serializers.ReadOnlyField()
+    machinary_confirmor = serializers.ReadOnlyField()
+    projectPersonel_confirmor = serializers.ReadOnlyField()
+    problem_confirmor = serializers.ReadOnlyField()
+    criticalAction_confirmor = serializers.ReadOnlyField()  
+    projectDox_confirmor = serializers.ReadOnlyField()
+    periodicDox_confirmor = serializers.ReadOnlyField()
+    zoneImage_confirmor = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = UserRole
+        fields = ['project_manager', 'financialInfo_confirmor', 'hse_confirmor', 'progressState_confirmor', 
+                  'timeProgressState_confirmor', 'invoice_confirmor', 'financialInvoice_confirmor', 
+                  'workVolume_confirmor', 'pmsProgress_confirmor', 'budget_confirmor', 'machinary_confirmor', 
+                  'projectPersonel_confirmor', 'problem_confirmor', 'criticalAction_confirmor', 
+                  'projectDox_confirmor', 'periodicDox_confirmor', 'zoneImage_confirmor']  
+    
+    
+    
 #=========== Authentication Serializers ============
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,11 +1,16 @@
+import datetime
 import os
 import django
+from django.conf import settings
 from django.db import models
+from django.db.models import F, CharField, Value
+from django.db.models.functions import Concat
 from django.db.models.signals import pre_save, pre_delete, post_delete
 from django.dispatch import receiver
 from django.core.files.storage import FileSystemStorage
 
 from contracts.models import Contract
+from contracts.services import GregorianToShamsi
 from projects.models import ReportDate
 
 
@@ -39,19 +44,19 @@ class HseReportDox(models.Model):
     class Meta:
         db_table = 'tblw_HseReportDox'
 
-@receiver(pre_save, sender=HseReportDox)
-def hseReport_file_pre_save(sender, instance, *args, **kwargs):
-    hseReportDox = HseReportDox.objects.all()
-    if len(hseReportDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.hsereportdoxid:
-        hseReportDox = HseReportDox.objects.get(hsereportdoxid=instance.hsereportdoxid)
-        if hseReportDox and hseReportDox.file:
-            storage, path = hseReportDox.file.storage, hseReportDox.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=HseReportDox)
+# def hseReport_file_pre_save(sender, instance, *args, **kwargs):
+#     hseReportDox = HseReportDox.objects.all()
+#     if len(hseReportDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.hsereportdoxid and instance.file:
+#         hseReportDox = HseReportDox.objects.get(hsereportdoxid=instance.hsereportdoxid)
+#         if hseReportDox and hseReportDox.file and hseReportDox.file != instance.file:
+#             storage, path = hseReportDox.file.storage, hseReportDox.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
 
 @receiver(pre_delete, sender=HseReportDox)
 def hseReport_file_pre_delete(sender, instance, *args, **kwargs):
@@ -84,23 +89,23 @@ class ProjectDox(models.Model):
         if self.file:
             return self.file.name.split('/')[-1:][0]
         return ''
-        
+    
     class Meta:
         db_table = 'tblw_ProjectDox'
 
-@receiver(pre_save, sender=ProjectDox)
-def projectDox_file_pre_save(sender, instance, *args, **kwargs):
-    projectDox = ProjectDox.objects.all()
-    if len(projectDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.projectdoxid:
-        projectDox = ProjectDox.objects.get(projectdoxid=instance.projectdoxid)
-        if projectDox and projectDox.file:
-            storage, path = projectDox.file.storage, projectDox.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=ProjectDox)
+# def projectDox_file_pre_save(sender, instance, *args, **kwargs):
+#     projectDox = ProjectDox.objects.all()
+#     if len(projectDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.projectdoxid and instance.file:
+#         projectDox = ProjectDox.objects.get(projectdoxid=instance.projectdoxid)
+#         if projectDox and projectDox.file and projectDox.file != instance.file:
+#             storage, path = projectDox.file.storage, projectDox.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
 
 @receiver(pre_delete, sender=ProjectDox)
 def projectDox_file_pre_delete(sender, instance, *args, **kwargs):
@@ -136,19 +141,19 @@ class ContractDox(models.Model):
     class Meta:
         db_table = 'tblw_ContractDox'
 
-@receiver(pre_save, sender=ContractDox)
-def contractDox_file_pre_save(sender, instance, *args, **kwargs):
-    contractDox = ContractDox.objects.all()
-    if len(contractDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.contractdoxid:
-        contractDox = ContractDox.objects.get(contractdoxid=instance.contractdoxid)
-        if contractDox and contractDox.file:
-            storage, path = contractDox.file.storage, contractDox.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=ContractDox)
+# def contractDox_file_pre_save(sender, instance, *args, **kwargs):
+#     contractDox = ContractDox.objects.all()
+#     if len(contractDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.contractdoxid and instance.file:
+#         contractDox = ContractDox.objects.get(contractdoxid=instance.contractdoxid)
+#         if contractDox and contractDox.file and contractDox.file != instance.file:
+#             storage, path = contractDox.file.storage, contractDox.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
 
 @receiver(pre_delete, sender=ContractDox)
 def contractDox_file_pre_delete(sender, instance, *args, **kwargs):
@@ -163,12 +168,15 @@ class ContractorDox(models.Model):
     contractordoxid = models.AutoField(db_column='ContractorDoxId', primary_key=True)  # Field name made lowercase.
     contractid = models.ForeignKey(Contract, related_name="Contract_ContractorDox", 
                                    on_delete=models.PROTECT, db_column='ContractID')  # Field name made lowercase.
-    contractdate = models.DateField(db_column='ContractDate', blank=True, null=True, default=django.utils.timezone.now)  # Field name made lowercase.
+    contractdate = models.DateField(db_column='ContractDate', blank=True, null=True, default=datetime.date.today)  # Field name made lowercase.
     contracttitle = models.CharField(db_column='ContractTitle', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS')
     contractor = models.CharField(db_column='Contractor', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS')
-    contractNo = models.CharField(db_column='ContractNo', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')
+    contractno = models.CharField(db_column='ContractNo', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')
     riderno = models.PositiveSmallIntegerField(db_column='RiderNo')  # Field name made lowercase.
     file = models.FileField(db_column='File', storage=contractorDox_fs, null=True, unique=True)
+
+    def contractshamsidate(self):
+        return GregorianToShamsi(self.contractdate) if self.contractdate is not None else ''
 
     def filename(self):
         if self.file:
@@ -178,19 +186,19 @@ class ContractorDox(models.Model):
     class Meta:
         db_table = 'tblw_ContractorDox'
 
-@receiver(pre_save, sender=ContractorDox)
-def contractorDox_file_pre_save(sender, instance, *args, **kwargs):
-    contractorDox = ContractorDox.objects.all()
-    if len(contractorDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.contractordoxid:
-        contractorDoc = ContractorDox.objects.get(pk=instance.contractordoxid)
-        if contractorDoc and contractorDoc.file:
-            storage, path = contractorDoc.file.storage, contractorDoc.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=ContractorDox)
+# def contractorDox_file_pre_save(sender, instance, *args, **kwargs):
+#     contractorDox = ContractorDox.objects.all()
+#     if len(contractorDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.contractordoxid and instance.file:
+#         contractorDoc = ContractorDox.objects.get(pk=instance.contractordoxid)
+#         if contractorDoc and contractorDoc.file and contractorDoc.file != instance.file:
+#             storage, path = contractorDoc.file.storage, contractorDoc.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
                     
 @receiver(pre_delete, sender=ContractorDox)
 def contractorDox_file_pre_delete(sender, instance, *args, **kwargs):
@@ -226,23 +234,23 @@ class ProjectMonthlyDox(models.Model):
         if self.file:
             return self.file.name.split('/')[-1:][0]
         return ''
-        
+            
     class Meta:
         db_table = 'tblw_ProjectMonthlyDox'
 
-@receiver(pre_save, sender=ProjectMonthlyDox)
-def projectMonthlyDox_file_pre_save(sender, instance, *args, **kwargs):
-    projectMonthlyDox = ProjectMonthlyDox.objects.all()
-    if len(projectMonthlyDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.projectMonthlydoxid:
-        projectMonthlyDox = ProjectMonthlyDox.objects.get(projectmonthlydoxid=instance.projectmonthlydoxid)
-        if projectMonthlyDox and projectMonthlyDox.file:
-            storage, path = projectMonthlyDox.file.storage, projectMonthlyDox.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=ProjectMonthlyDox)
+# def projectMonthlyDox_file_pre_save(sender, instance, *args, **kwargs):
+#     projectMonthlyDox = ProjectMonthlyDox.objects.all()
+#     if len(projectMonthlyDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.projectmonthlydoxid and instance.file:
+#         projectMonthlyDox = ProjectMonthlyDox.objects.get(projectmonthlydoxid=instance.projectmonthlydoxid)
+#         if projectMonthlyDox and projectMonthlyDox.file and projectMonthlyDox.file != instance.file:
+#             storage, path = projectMonthlyDox.file.storage, projectMonthlyDox.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
 
 @receiver(pre_delete, sender=ProjectMonthlyDox)
 def projectMonthlyDox_file_pre_delete(sender, instance, *args, **kwargs):
@@ -278,6 +286,15 @@ class InvoiceDox(models.Model):
     file = models.FileField(db_column='File', storage=invoiceDox_fs, null=True, unique=True)
     active = models.BooleanField(db_column='Active')  # Field name made lowercase.
 
+    def invoiceshamsidate(self):
+        return GregorianToShamsi(self.invoicedate) if self.invoicedate is not None else ''
+
+    def sendshamsidate(self):
+        return GregorianToShamsi(self.senddate) if self.senddate is not None else ''
+
+    def confirmshamsidate(self):
+        return GregorianToShamsi(self.confirmdate) if self.confirmdate is not None else ''
+
     def filename(self):
         if self.file:
             return self.file.name.split('/')[-1:][0]
@@ -286,19 +303,19 @@ class InvoiceDox(models.Model):
     class Meta:
         db_table = 'tblw_InvoiceDox'
 
-@receiver(pre_save, sender=InvoiceDox)
-def invoiceDox_file_pre_save(sender, instance, *args, **kwargs):
-    invoiceDox = InvoiceDox.objects.all()
-    if len(invoiceDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.invoicedoxid:
-        invoiceDoc = InvoiceDox.objects.get(pk=instance.invoicedoxid)
-        if invoiceDoc and invoiceDoc.file:
-            storage, path = invoiceDoc.file.storage, invoiceDoc.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=InvoiceDox)
+# def invoiceDox_file_pre_save(sender, instance, *args, **kwargs):
+#     invoiceDox = InvoiceDox.objects.all()
+#     if len(invoiceDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.invoicedoxid and instance.file:
+#         invoiceDoc = InvoiceDox.objects.get(pk=instance.invoicedoxid)
+#         if invoiceDoc and invoiceDoc.file and invoiceDoc.file != instance.file:
+#             storage, path = invoiceDoc.file.storage, invoiceDoc.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
 
 @receiver(pre_delete, sender=InvoiceDox)
 def invoiceDox_file_pre_delete(sender, instance, *args, **kwargs):
@@ -315,11 +332,11 @@ class ApprovedInvoiceDox(models.Model):
                                    on_delete=models.PROTECT, db_column='ContractID')  # Field name made lowercase.
     dateid = models.ForeignKey(ReportDate,  related_name="ReportDate_ApprovedInvoiceDox", 
                                    on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
-    invoiceKind = models.PositiveSmallIntegerField(db_column='InvoiceKind')
-    invoiceNo = models.PositiveSmallIntegerField(db_column='InvoiceNo')
-    invoiceDate = models.DateField(db_column='InvoiceDate')  # Field name made lowercase.
-    sendDate = models.DateField(db_column='SendDate', null=True)  # Field name made lowercase.
-    confirmDate = models.DateField(db_column='ConfirmDate', null=True)  # Field name made lowercase.
+    invoicekind = models.PositiveSmallIntegerField(db_column='InvoiceKind')
+    invoiceno = models.PositiveSmallIntegerField(db_column='InvoiceNo')
+    invoicedate = models.DateField(db_column='InvoiceDate')  # Field name made lowercase.
+    senddate = models.DateField(db_column='SendDate', null=True)  # Field name made lowercase.
+    confirmdate = models.DateField(db_column='ConfirmDate', null=True)  # Field name made lowercase.
     sgp_r = models.IntegerField(db_column='SGP_R', null=True)
     sgp_fc = models.BigIntegerField(db_column='SGP_FC', null=True)
     cgp_r = models.IntegerField(db_column='CGP_R', null=True)
@@ -327,6 +344,15 @@ class ApprovedInvoiceDox(models.Model):
     description = models.CharField(db_column='Description', max_length=250, null=True, db_collation='SQL_Latin1_General_CP1_CI_AS')  # Field name made lowercase.
     file = models.FileField(db_column='File', storage=invoiceDox_fs, null=True, unique=True)
     active = models.BooleanField(db_column='Active', blank=True, null=True)  # Field name made lowercase.
+
+    def invoiceshamsidate(self):
+        return GregorianToShamsi(self.invoicedate) if self.invoicedate is not None else ''
+
+    def sendshamsidate(self):
+        return GregorianToShamsi(self.senddate) if self.senddate is not None else ''
+
+    def confirmshamsidate(self):
+        return GregorianToShamsi(self.confirmdate) if self.confirmdate is not None else ''
 
     def filename(self):
         if self.file:
@@ -336,19 +362,19 @@ class ApprovedInvoiceDox(models.Model):
     class Meta:
         db_table = 'tblw_ApprovedInvoiceDox'
 
-@receiver(pre_save, sender=ApprovedInvoiceDox)
-def approvedInvoiceDox_file_pre_save(sender, instance, *args, **kwargs):
-    projectMonthlyDox = ApprovedInvoiceDox.objects.all()
-    if len(projectMonthlyDox) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.approvedinvoicedoxid:
-        projectMonthlyDox = ApprovedInvoiceDox.objects.get(approvedinvoicedoxid=instance.approvedinvoicedoxid)
-        if projectMonthlyDox and projectMonthlyDox.file:
-            storage, path = projectMonthlyDox.file.storage, projectMonthlyDox.file.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=ApprovedInvoiceDox)
+# def approvedInvoiceDox_file_pre_save(sender, instance, *args, **kwargs):
+#     projectMonthlyDox = ApprovedInvoiceDox.objects.all()
+#     if len(projectMonthlyDox) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.approvedinvoicedoxid and instance.file:
+#         projectMonthlyDox = ApprovedInvoiceDox.objects.get(approvedinvoicedoxid=instance.approvedinvoicedoxid)
+#         if projectMonthlyDox and projectMonthlyDox.file and projectMonthlyDox.file != instance.file:
+#             storage, path = projectMonthlyDox.file.storage, projectMonthlyDox.file.path
+#             if storage.exists(path):
+#                 storage.delete(path)
 
 @receiver(pre_delete, sender=ApprovedInvoiceDox)
 def approvedInvoiceDox_file_pre_delete(sender, instance, *args, **kwargs):
@@ -376,6 +402,121 @@ class Zone(models.Model):
 #             ZONE IMAGE MODEL
 # ========================================= 
 zoneImage_fs = FileSystemStorage(location="D:\projects\cost_control\Pmrs_Files\Constructions Pix")
+class ProjectZoneImageQuerySet(models.query.QuerySet):
+    def allProjectZonesImages(self):
+        zoneImages1 = self.all().values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img1', 'description1').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img1'), 
+            description=F('description1')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description1', output_field=CharField()) 
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+        zoneImages2 = self.all().values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img2', 'description2').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img2'), 
+            description=F('description2')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description2', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+        zoneImages3 = self.all().values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img3', 'description3').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img3'), 
+            description=F('description3')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description3', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+
+        return zoneImages1.union(zoneImages2).union(zoneImages3)   
+    
+    def projectAllZonesImages(self, contractId):
+        zoneImages1 = self.filter(zoneid__contractid__exact=contractId).values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img1', 'description1').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img1'), 
+            description=F('description1')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description1', output_field=CharField()) 
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+        zoneImages2 = self.filter(zoneid__contractid__exact=contractId).values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img2', 'description2').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img2'), 
+            description=F('description2')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description2', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+        zoneImages3 = self.filter(zoneid__contractid__exact=contractId).values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img3', 'description3').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img3'), 
+            description=F('description3')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description3', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+
+        return zoneImages1.union(zoneImages2).union(zoneImages3)   
+    
+    def projectZoneImages(self, zoneId):
+        zoneImages1 = self.filter(zoneid__exact=zoneId).values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img1', 'description1').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img1'), 
+            description=F('description1')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description1', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+        zoneImages2 = self.filter(zoneid__exact=zoneId).values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img2', 'description2').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img2'), 
+            description=F('description2')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description2', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+        zoneImages3 = self.filter(zoneid__exact=zoneId).values(
+            'zoneid__contractid__contract', 'zoneid__zone', 'ppp', 'app', 'img3', 'description3').annotate(
+            contract=F('zoneid__contractid__contract'), 
+            zone=F('zoneid__zone'), 
+            img=F('img3'), 
+            description=F('description3')
+            # description=Concat(Value(' { پروژه: '), 'zoneid__contractid__contract',  
+            #                   Value(' } - { درصد پیشرفت برنامه ای: '), 'ppp', Value( ' } - { درصد پیشرفت واقعی: '), 'app', 
+            #                   Value(' } - '), 'description1', output_field=CharField())
+            ).values('contract', 'zone', 'ppp', 'app', 'img', 'description')
+
+        return zoneImages1.union(zoneImages2).union(zoneImages3)        
+
+class ProjectZoneImageManager(models.Manager):
+    def get_queryset(self):
+        return ProjectZoneImageQuerySet(self.model, using=self._db)
+
+    def allProjectZonesImages(self):
+        return self.get_queryset().allProjectZonesImages()
+
+    def projectAllZonesImages(self, contractId):
+        return self.get_queryset().projectAllZonesImages(contractId)
+
+    def projectZoneImages(self, zoneId):
+        return self.get_queryset().projectZoneImages(zoneId)        
 
 class ZoneImage(models.Model):
     zoneimageid = models.AutoField(db_column='ZoneImageID', primary_key=True)  # Field name made lowercase.
@@ -395,6 +536,9 @@ class ZoneImage(models.Model):
     img3 = models.ImageField(db_column='Img3', upload_to='zone_images', blank=True, null=True, unique=True)
     description3 = models.CharField(db_column='Description3', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
 
+    objects = models.Manager()
+    projectZoneImages = ProjectZoneImageManager()
+    
     def zone(self):
         return self.zoneid.zone
     
@@ -416,31 +560,39 @@ class ZoneImage(models.Model):
             return self.img3.name.split('/')[-1:][0]
         # 
         return ''
-        
+    
+    @property
+    def explanation(self):
+        return 'پروژه: %s - سازه: %s -  درصد پیشرفت برنامه ای: %s - درصد پیشرفت واقعی: %s - %s'  % (
+            self.zoneid.contractid.contract,self.zoneid.zone, self.ppp, self.app, self.description)
+    
     class Meta:
         db_table = 'tblw_ZoneImage'
 
-@receiver(pre_save, sender=ZoneImage)
-def zone_image_pre_save(sender, instance, *args, **kwargs):
-    zoneImages = ZoneImage.objects.all()
-    if len(zoneImages) == 0:
-        return
-    # As it was not yet saved, we get the instance from DB with 
-    # the old file name to delete it. Which won't happen if it's a new instance
-    if instance and instance.zoneimageid:
-        zoneImage = ZoneImage.objects.get(pk=instance.zoneimageid)
-        if zoneImage and zoneImage.img1:
-            storage, path = zoneImage.img1.storage, zoneImage.img1.path
-            if storage.exists(path):
-                storage.delete(path)
-        if zoneImage and zoneImage.img2:
-            storage, path = zoneImage.img2.storage, zoneImage.img2.path
-            if storage.exists(path):
-                storage.delete(path)
-        if zoneImage and zoneImage.img3:
-            storage, path = zoneImage.img3.storage, zoneImage.img3.path
-            if storage.exists(path):
-                storage.delete(path)
+# @receiver(pre_save, sender=ZoneImage)
+# def zone_image_pre_save(sender, instance, *args, **kwargs):
+#     zoneImages = ZoneImage.objects.all()
+#     if len(zoneImages) == 0:
+#         return
+#     # As it was not yet saved, we get the instance from DB with 
+#     # the old file name to delete it. Which won't happen if it's a new instance
+#     if instance and instance.zoneimageid:
+#         zoneImage = ZoneImage.objects.get(pk=instance.zoneimageid)
+#         if instance.img1:
+#             if zoneImage and zoneImage.img1 and zoneImage.img1 != instance.img1:
+#                 storage, path = zoneImage.img1.storage, zoneImage.img1.path
+#                 if storage.exists(path):
+#                     storage.delete(path)
+#         if instance.img2:
+#             if zoneImage and zoneImage.img2 and zoneImage.img2 != instance.img2:
+#                 storage, path = zoneImage.img2.storage, zoneImage.img2.path
+#                 if storage.exists(path):
+#                     storage.delete(path)
+#         if instance.img3:
+#             if zoneImage and zoneImage.img3 and zoneImage.img3 != instance.img3:
+#                 storage, path = zoneImage.img3.storage, zoneImage.img3.path
+#                 if storage.exists(path):
+#                     storage.delete(path)
                                 
 @receiver(pre_delete, sender=ZoneImage)
 def zone_image_pre_delete(sender, instance, *args, **kwargs):
@@ -504,30 +656,34 @@ def attachment_file_update(sender, **kwargs):
 # ========================================= 
 class ReportVisit(models.Model):
     reportvisitid = models.AutoField(db_column='ReportVisitID', primary_key=True)  # Field name made lowercase.
-    userid = models.IntegerField(db_column='UserID')  # Field name made lowercase.
-    contractid = models.ForeignKey(Contract, related_name="Contract_ReportVisit", 
+    userid = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="reportVisits", 
+                                   on_delete=models.PROTECT, db_column='UserID')  # Field name made lowercase.
+    contractid = models.ForeignKey(Contract, related_name="reportVisits", 
                                    on_delete=models.PROTECT, db_column='ContractID')  # Field name made lowercase.
-    dateid = models.ForeignKey(ReportDate,  related_name="ReportDate_ReportVisit", 
+    dateid = models.ForeignKey(ReportDate,  related_name="reportVisits", 
                                    on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
-    financialinfo = models.BooleanField(db_column='FinancialInfo')  # Field name made lowercase.
-    hse = models.BooleanField(db_column='HSE')  # Field name made lowercase.
-    progressstate = models.BooleanField(db_column='ProgressState')  # Field name made lowercase.
-    timeprogressstate = models.BooleanField(db_column='TimeProgressState')  # Field name made lowercase.
-    invoice = models.BooleanField(db_column='Invoice')  # Field name made lowercase.
-    financialinvoice = models.BooleanField(db_column='FinancialInvoice')  # Field name made lowercase.
-    workvolume = models.BooleanField(db_column='WorkVolume')  # Field name made lowercase.
-    pmsprogress = models.BooleanField(db_column='PMSProgress')  # Field name made lowercase.
-    budget = models.BooleanField(db_column='Budget')  # Field name made lowercase.
-    machinary = models.BooleanField(db_column='Machinary')  # Field name made lowercase.
-    personel = models.BooleanField(db_column='Personel')  # Field name made lowercase.
-    problems = models.BooleanField(db_column='Problems')  # Field name made lowercase.
-    criticalactions = models.BooleanField(db_column='CriticalActions')  # Field name made lowercase.
-    zoneimages = models.BooleanField(db_column='ZoneImages')  # Field name made lowercase.
-    projectdox = models.BooleanField(db_column='ProjectDox')  # Field name made lowercase.
-    durationdox = models.BooleanField(db_column='DurationDox')  # Field name made lowercase.
-    dashboard_r = models.BooleanField(db_column='Dashboard_R')  # Field name made lowercase.
-    dashboard_fc = models.BooleanField(db_column='Dashboard_FC')  # Field name made lowercase.
-    imagereport = models.BooleanField(db_column='ImageReport')  # Field name made lowercase.
+    financialinfo = models.BooleanField(default=False, db_column='FinancialInfo')  # Field name made lowercase.
+    hse = models.BooleanField(default=False, db_column='HSE')  # Field name made lowercase.
+    progressstate = models.BooleanField(default=False, db_column='ProgressState')  # Field name made lowercase.
+    timeprogressstate = models.BooleanField(default=False, db_column='TimeProgressState')  # Field name made lowercase.
+    invoice = models.BooleanField(default=False, db_column='Invoice')  # Field name made lowercase.
+    financialinvoice = models.BooleanField(default=False, db_column='FinancialInvoice')  # Field name made lowercase.
+    workvolume = models.BooleanField(default=False, db_column='WorkVolume')  # Field name made lowercase.
+    pmsprogress = models.BooleanField(default=False, db_column='PMSProgress')  # Field name made lowercase.
+    budget = models.BooleanField(default=False, db_column='Budget')  # Field name made lowercase.
+    machinary = models.BooleanField(default=False, db_column='Machinary')  # Field name made lowercase.
+    personel = models.BooleanField(default=False, db_column='Personel')  # Field name made lowercase.
+    problems = models.BooleanField(default=False, db_column='Problems')  # Field name made lowercase.
+    criticalactions = models.BooleanField(default=False, db_column='CriticalActions')  # Field name made lowercase.
+    zoneimages = models.BooleanField(default=False, db_column='ZoneImages')  # Field name made lowercase.
+    projectdox = models.BooleanField(default=False, db_column='ProjectDox')  # Field name made lowercase.
+    durationdox = models.BooleanField(default=False, db_column='DurationDox')  # Field name made lowercase.
+    dashboard_r = models.BooleanField(default=False, db_column='Dashboard_R')  # Field name made lowercase.
+    dashboard_fc = models.BooleanField(default=False, db_column='Dashboard_FC')  # Field name made lowercase.
+    imagereport = models.BooleanField(default=False, db_column='ImageReport')  # Field name made lowercase.
+
+    def manager(self):
+        return '%s %s' % (self.userid.first_name, self.userid.last_name)     
 
     class Meta:
         db_table = 'tblw_ReportVisit'
@@ -539,9 +695,10 @@ class ReportVisit(models.Model):
 # ========================================= 
 class ReportVisitdate(models.Model):
     visitreportdateid = models.AutoField(db_column='VisitReportDateID', primary_key=True)  # Field name made lowercase.
-    visitreportid = models.IntegerField(db_column='VisitReportID')  # Field name made lowercase.
+    visitreportid = models.ForeignKey(ReportVisit, related_name="ReportVisitdates", 
+                                   on_delete=models.PROTECT, db_column='VisitReportID')  # Field name made lowercase.
     reportid = models.IntegerField(db_column='ReportID')  # Field name made lowercase.
-    reportvisitdate = models.DateField(db_column='ReportVisitDate')  # Field name made lowercase.
+    reportvisitdate = models.DateField(default=django.utils.timezone.now, db_column='ReportVisitDate')  # Field name made lowercase.
 
     class Meta:
         db_table = 'tblw_ReportVisitDate'

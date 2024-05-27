@@ -33,7 +33,6 @@ class UserCreateAPI(generics.GenericAPIView):
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
 class UserDeleteAPI(generics.GenericAPIView):
     permission_classes = [
         permissions.IsAuthenticated
@@ -181,7 +180,22 @@ class UserExAPI(viewsets.ModelViewSet):
     ]
 
     serializer_class = UserExSerializer
- 
+
+class ProjectConfirmersAPI(APIView):
+    permission_classes = [
+        permissions.IsAuthenticated
+    ] 
+
+    def get(self, request, *args, **kwargs):
+        try:
+            contractId = kwargs["contractid"]   
+            userRoles = UserRole.objects.filter(projectid__exact=contractId)
+            serializer = ProjectConfirmersSerializers(instance=userRoles[0], many=False)
+            return Response({"status": 'success', "data": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status": 'error', "data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+
 #=========== Authentication Api ============
 class RegisterAPI(generics.GenericAPIView):
   serializer_class = RegisterSerializer
@@ -199,7 +213,6 @@ class RegisterAPI(generics.GenericAPIView):
 class LoginAPI(generics.GenericAPIView):
     # serializer_class = LoginSerializer self.get_serializer
     def post(self, request, *args, **kwargs):
-        
         try:
             serializer = LoginSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -240,32 +253,19 @@ class LoginAPI(generics.GenericAPIView):
             return Response({"status": 'error: unauthorized', "data": str(e)}, status=status.HTTP_401_UNAUTHORIZED)  
 
 class LoginExAPI(generics.GenericAPIView):
-    serializer_class = LoginSerializer
     def post(self, request, *args, **kwargs):
-        data = request.data
-        # username = data["username"]
-        # password = data["password"]
+        try:
+            serializer = LoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data
  
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
-        _, token = AuthToken.objects.create(user)
-    # ---------------------------------------------------------------
-        # havePermission = False
-        # for group in user.groups.all():
-        #     if(group.name == 'Restaurant Service Admin'):
-        #             havePermission = True
-        #             break   
-        
-        # if(not havePermission):
-        #     return Response({
-        #         "token": None,
-        #     }) 
-    # ---------------------------------------------------------------
-        return Response({
-            "user": UserSerializer(user, context=self.get_serializer_context()).data,
-            "token": token,
-            })
+            return Response({
+                    "status": "succeed", 
+                }, 
+                status=status.HTTP_200_OK) 
+
+        except Exception as e:
+            return Response({"status": 'error: unauthorized', "data": str(e)}, status=status.HTTP_401_UNAUTHORIZED)  
 
 class PasswordAPIView(APIView):
     def get_object(self, userid):

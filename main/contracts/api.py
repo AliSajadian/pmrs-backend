@@ -10,16 +10,16 @@ import re
 
 from contracts.models import *
 from projects.models import ReportConfirm
+from accounts.serializers import ProjectConfirmersSerializers
 from .serializers import *
 
 
 class ContractTypeAPI(viewsets.ModelViewSet):
-    queryset = ContractType.objects.all()
+    queryset = ContractType.objects.order_by('contracttypeid')
 
     permission_classes = [
         permissions.IsAuthenticated
     ]
-
     serializer_class = ContractTypeSerializer
   
   
@@ -42,7 +42,7 @@ class ContractAPIEx(APIView):
     def get(self, request, userid):
         try:
             all_contracts = UserRole.objects.filter(userid__exact=userid, 
-                                                       contractid__exact=None)
+                                                       projectid__exact=None)
             if(len(all_contracts) == 1):
                 contracts = Contract.objects.all().order_by('-startdate')
                 serializer = ContractSerializerEx(contracts, many=True)
@@ -50,6 +50,7 @@ class ContractAPIEx(APIView):
                 contracts = Contract.objects.filter(Contract_UserRole__userid__exact=userid).order_by(
                     '-startdate').distinct()
                 serializer = ContractSerializerEx(contracts, many=True)
+                
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -85,20 +86,19 @@ class PersonelAPI(viewsets.ModelViewSet):
     serializer_class = PersonelSerializer
     
 
-
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def get_ContractBaseInfo(request, contractId, dateId):
     try:
         contractBaseInfo = Contract.objects.get(pk=contractId)
         serializer = ContractBaseInfoSerializer(instance=contractBaseInfo, many=False)
-        
+                
         reportConfirmed = ReportConfirm.objects.filter(contractid__exact=contractId, dateid__exact=dateId, pm_c__gt=0)
         
         return Response({
             "status": "success", 
             "contractInfo": serializer.data,
-            "projectManagerConfirmed": len(reportConfirmed) > 0
+            "projectManagerConfirmed": True if reportConfirmed is not None and len(reportConfirmed) > 0 else False
             }, 
             status=status.HTTP_200_OK)
         

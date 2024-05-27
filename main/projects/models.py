@@ -7,16 +7,16 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 import os
 from django.db import models
+from django.db.models import F, Sum
 from django.db.models.expressions import Window
 from django.db.models.functions import RowNumber
-from django.core.files.storage import FileSystemStorage
-from django.db import models
-from django.db.models import F
 from django.db.models.signals import pre_save
+from django.core.files.storage import FileSystemStorage
 from django.dispatch import receiver
 
+from django.conf import settings
 from contracts.models import Contract
-from contracts.services import GregorianToShamsi
+from contracts.services import GregorianToShamsi, GregorianToShamsiShow
 
 
 class ReportDate(models.Model):
@@ -26,7 +26,8 @@ class ReportDate(models.Model):
     date = models.DateField(db_column='Date', blank=True, null=True)  # Field name made lowercase.
 
     def shamsiDate(self):
-        return GregorianToShamsi(self.date)
+        return '%s-%s' % (self.year, self.month)
+    # GregorianToShamsi(self.date)
     
     class Meta:
         db_table = 'tblw_ReportDate'
@@ -41,6 +42,38 @@ class ContractReportDate(models.Model):
         verbose_name = 'Contract_ReportDate'
         verbose_name_plural = 'Contract_ReportDates'
         
+        
+class ReportConfirm(models.Model):
+    reportconfirmid = models.AutoField(db_column='ReportConfirmID', primary_key=True)  # Field name made lowercase.
+    contractid = models.ForeignKey(Contract, related_name="reportConfirms", 
+                                   on_delete=models.PROTECT, db_column='ContractID')  # Field name made lowercase.
+    dateid = models.ForeignKey(ReportDate, related_name="reportConfirms", 
+                                   on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
+    userid = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="reportConfirms", 
+                                   on_delete=models.PROTECT, db_column='UserID')  # Field name made lowercase.
+    type = models.SmallIntegerField(db_column='Type', blank=True, null=True)  # Field name made lowercase.
+    user_c = models.BooleanField(db_column='User_C', blank=True, null=True)  # Field name made lowercase.
+    pm_c = models.BooleanField(db_column='PM_C', blank=True, null=True)  # Field name made lowercase.
+    sa_c = models.BooleanField(db_column='SA_C', blank=True, null=True)  # Field name made lowercase.
+    userconfirmdate = models.DateField(db_column='UserConfirmDate', blank=True, null=True)  # Field name made lowercase.
+    pmconfirmdate = models.DateField(db_column='PMConfirmDate', blank=True, null=True)  # Field name made lowercase.
+    saconfirmdate = models.DateField(db_column='SAConfirmDate', blank=True, null=True)  # Field name made lowercase.
+
+    def userconfirmer(self):
+        return '%s %s' % (self.userid.first_name, self.userid.last_name)     
+       
+    def userconfirmshamsidate(self):
+        return GregorianToShamsiShow(self.userconfirmdate) if self.userconfirmdate is not None else ''
+ 
+    def pmconfirmshamsidate(self):
+        return GregorianToShamsiShow(self.pmconfirmdate) if self.pmconfirmdate is not None else ''
+
+    def saconfirmshamsidate(self):
+        return GregorianToShamsiShow(self.saconfirmdate) if self.saconfirmdate is not None else ''
+    
+    class Meta:
+        db_table = 'tblw_ReportConfirm'
+    
         
 class BudgetCostManager(models.Manager):
     def get_queryset(self):
@@ -79,7 +112,40 @@ class Budgetcost(models.Model):
     
     def month(self):
         return self.dateid.month
-    
+        
+    def persianMonth(self):
+        month = int(self.dateid.month)
+        if(month < 7):
+            if(month < 4):
+                if(month == 1):
+                    return 'فروردین'
+                elif(month == 2):
+                    return 'اردیبهشت'
+                elif(month == 3):
+                    return 'خرداد'
+            else:
+                if(month == 4):
+                    return 'تیر'        
+                elif(month == 5):
+                    return 'مرداد'
+                elif(month == 6):
+                    return 'شهریور' 
+        else:     
+            if(month < 10):
+                if(month == 7):
+                    return 'مهر'        
+                elif(month == 8):
+                    return 'آبان'        
+                elif(month == 9):
+                    return 'آذر'
+            else:
+                if(month == 10):
+                    return 'دی'        
+                elif(month == 11):
+                    return 'بهمن'        
+                elif(month == 12):
+                    return 'اسفند'
+         
     class Meta:
         db_table = 'tblw_BudgetCost'
 
@@ -106,7 +172,7 @@ class CriticalAction(models.Model):
 
     objects = models.Manager()
     row_number_objects = CriticalActionManager()
-    
+
     class Meta:
         db_table = 'tblw_CriticalAction'
 
@@ -162,6 +228,14 @@ class FinancialInfo(models.Model):
     estdebitcredit_r = models.BigIntegerField(db_column='EstDebitCredit_R', blank=True, null=True)  # Field name made lowercase.
     estdebitcredit_fc = models.BigIntegerField(db_column='EstDebitCredit_FC', blank=True, null=True)  # Field name made lowercase.
 
+    def isconfirmed(self):
+        rc = ReportConfirm.objects.filter(contractid__exact=self.contractid, dateid__exact=self.dateid, type__exact=1)[0]
+        return rc.user_c or 0 if rc is not None else 0    
+    
+    def confirmdate(self):
+        rc = ReportConfirm.objects.filter(contractid__exact=self.contractid, dateid__exact=self.dateid, type__exact=1)[0]
+        return GregorianToShamsi(rc.userconfirmdate) or '' if rc is not None else ''
+
     class Meta:
         db_table = 'tblw_FinancialInfo'
 
@@ -180,6 +254,29 @@ class Hse(models.Model):
 
     objects = models.Manager()
 
+    def totaldeathno(self):
+        deathno_sum = Hse.objects.filter(contractid__exact=self.contractid, 
+                                         dateid__lte=self.dateid).aggregate(Sum('deathno'))['deathno__sum']
+        return deathno_sum
+
+    def totalwoundno(self):
+        woundno_sum = Hse.objects.filter(contractid__exact=self.contractid, 
+                                         dateid__lte=self.dateid).aggregate(Sum('woundno'))['woundno__sum']
+        return woundno_sum
+    
+    def totaldisadvantageeventno(self):
+        disadvantageeventno_sum = Hse.objects.filter(contractid__exact=self.contractid, 
+                                         dateid__lte=self.dateid).aggregate(Sum('disadvantageeventno'))['disadvantageeventno__sum']
+        return disadvantageeventno_sum
+            
+    def isconfirmed(self):
+        rc = ReportConfirm.objects.filter(contractid__exact=self.contractid, dateid__exact=self.dateid, type__exact=2)[0]
+        return rc.user_c or 0 if rc is not None else 0    
+    
+    def confirmdate(self):
+        rc = ReportConfirm.objects.filter(contractid__exact=self.contractid, dateid__exact=self.dateid, type__exact=2)[0]
+        return GregorianToShamsi(rc.userconfirmdate) or '' if rc is not None else ''
+    
     class Meta:
         db_table = 'tblw_HSE'
 
@@ -253,6 +350,74 @@ class Invoice(models.Model):
     objects = models.Manager()
     row_number_objects = InvoiceManager()
 
+    def year(self):
+        return self.dateid.year
+    
+    def month(self):
+        return self.dateid.month
+    
+    def sendshamsidate(self):
+        return GregorianToShamsi(self.senddate) if self.senddate is not None else ''
+
+    def confirmedInvoiceAmounts(self):
+        return (self.aci_g_r or 0) + (self.aca_g_r or 0) + (self.ew_g_r or 0)
+ 
+    def sentInvoiceAmounts(self):
+        return (self.icc_g_r or 0) + (self.acc_g_r or 0) + (self.ewcc_g_r or 0)
+
+    def allReceived(self):
+        a = ((self.ccpi_a_vat_ew_r or 0) - (self.cvat_r or 0))
+        return a
+
+    def confirmedAmount(self):
+        b = ((self.aci_n_r or 0) + (self.aca_n_r or 0) + (self.ew_n_r or 0)) 
+        return b 
+
+    def receivePercent(self):
+        a = ((self.ccpi_a_vat_ew_r or 0) - (self.cvat_r or 0))
+        b = ((self.aci_n_r or 0) + (self.aca_n_r or 0) + (self.ew_n_r or 0)) 
+        return 0 if b == 0 else (a / b) * 100
+
+    def totalCumulativeReceiveAmount(self):
+        financialInfos = FinancialInfo.objects.filter(contractid__exact=self.contractid, dateid__exact=self.dateid)
+        financialInfo = financialInfos[0] if financialInfos and len(financialInfos) > 0 else None
+        lastclaimbill = financialInfo.lastclaimbill_r if financialInfo else 0
+        
+        return (self.ccpi_a_vat_ew_r or 0) + (lastclaimbill or 0)
+        
+    def persianMonth(self):
+        month = int(self.dateid.month)
+        if(month < 7):
+            if(month < 4):
+                if(month == 1):
+                    return 'فروردین'
+                elif(month == 2):
+                    return 'اردیبهشت'
+                elif(month == 3):
+                    return 'خرداد'
+            else:
+                if(month == 4):
+                    return 'تیر'        
+                elif(month == 5):
+                    return 'مرداد'
+                elif(month == 6):
+                    return 'شهریور' 
+        else:     
+            if(month < 10):
+                if(month == 7):
+                    return 'مهر'        
+                elif(month == 8):
+                    return 'آبان'        
+                elif(month == 9):
+                    return 'آذر'
+            else:
+                if(month == 10):
+                    return 'دی'        
+                elif(month == 11):
+                    return 'بهمن'        
+                elif(month == 12):
+                    return 'اسفند'
+            
     class Meta:
         db_table = 'tblw_Invoice'
 
@@ -327,6 +492,77 @@ class FinancialInvoice(models.Model):
     m = models.BooleanField(db_column='M', blank=True, null=True)  # Field name made lowercase.
     typevalue = models.SmallIntegerField(db_column='TypeValue', blank=True, null=True)  # Field name made lowercase.
 
+    def year(self):
+        return self.dateid.year
+    
+    def month(self):
+        return self.dateid.month
+    
+    def sendshamsidate(self):
+        return GregorianToShamsi(self.senddate) if self.senddate is not None else ''
+
+    def confirmedInvoiceAmounts(self):
+        return (self.aci_g_r or 0) + (self.aca_g_r or 0) + (self.ew_g_r or 0)
+ 
+    def sentInvoiceAmounts(self):
+        return (self.icc_g_r or 0) + (self.acc_g_r or 0) + (self.ewcc_g_r or 0)
+
+    def allReceived(self):
+        a = ((self.ccpi_a_vat_ew_r or 0) - (self.cvat_r or 0))
+        return a
+
+    def confirmedAmount(self):
+        b = ((self.aci_n_r or 0) + (self.aca_n_r or 0) + (self.ew_n_r or 0)) 
+        return b 
+
+    def receivePercent(self):
+        a = ((self.ccpi_a_vat_ew_r or 0) - (self.cvat_r or 0))
+        b = ((self.aci_n_r or 0) + (self.aca_n_r or 0) + (self.ew_n_r or 0)) 
+        return 0 if b == 0 else (a / b) * 100
+
+    def totalCumulativeReceiveAmount(self):
+        financialInfos = FinancialInfo.objects.filter(contractid__exact=self.contractid, dateid__exact=self.dateid)
+        financialInfo = financialInfos[0] if financialInfos and len(financialInfos) > 0 else None
+        lastclaimbill = financialInfo.lastclaimbill_r if financialInfo else 0
+        
+        return (self.ccpi_a_vat_ew_r or 0) + (lastclaimbill or 0)
+        
+    def persianMonth(self):
+        month = int(self.dateid.month)
+        if(month < 7):
+            if(month < 4):
+                if(month == 1):
+                    return 'فروردین'
+                elif(month == 2):
+                    return 'اردیبهشت'
+                elif(month == 3):
+                    return 'خرداد'
+            else:
+                if(month == 4):
+                    return 'تیر'        
+                elif(month == 5):
+                    return 'مرداد'
+                elif(month == 6):
+                    return 'شهریور' 
+        else:     
+            if(month < 10):
+                if(month == 7):
+                    return 'مهر'        
+                elif(month == 8):
+                    return 'آبان'        
+                elif(month == 9):
+                    return 'آذر'
+            else:
+                if(month == 10):
+                    return 'دی'        
+                elif(month == 11):
+                    return 'بهمن'        
+                elif(month == 12):
+                    return 'اسفند'
+            
+
+        return GregorianToShamsi(self.senddate) if self.senddate is not None else ''
+    
     class Meta:
         db_table = 'tblw_InvoiceEx'
 
@@ -458,6 +694,39 @@ class ProgressState(models.Model):
     def month(self):
         return self.dateid.month
     
+    def persian6Month(self):
+        month = int(self.dateid.month)
+        if(month < 7):
+            if(month < 4):
+                if(month == 1):
+                    return 'فروردین'
+                elif(month == 2):
+                    return 'اردیبهشت'
+                elif(month == 3):
+                    return 'خرداد'
+            else:
+                if(month == 4):
+                    return 'تیر'        
+                elif(month == 5):
+                    return 'مرداد'
+                elif(month == 6):
+                    return 'شهریور' 
+        else:     
+            if(month < 10):
+                if(month == 7):
+                    return 'مهر'        
+                elif(month == 8):
+                    return 'آبان'        
+                elif(month == 9):
+                    return 'آذر'
+            else:
+                if(month == 10):
+                    return 'دی'        
+                elif(month == 11):
+                    return 'بهمن'        
+                elif(month == 12):
+                    return 'اسفند'
+          
     class Meta:
         db_table = 'tblw_ProgressState'
 
@@ -494,9 +763,42 @@ class ProjectPersonnel(models.Model):
     def month(self):
         return self.dateid.month
     
+    def persianMonth(self):
+        month = int(self.dateid.month)
+        if(month < 7):
+            if(month < 4):
+                if(month == 1):
+                    return 'فروردین'
+                elif(month == 2):
+                    return 'اردیبهشت'
+                elif(month == 3):
+                    return 'خرداد'
+            else:
+                if(month == 4):
+                    return 'تیر'        
+                elif(month == 5):
+                    return 'مرداد'
+                elif(month == 6):
+                    return 'شهریور' 
+        else:     
+            if(month < 10):
+                if(month == 7):
+                    return 'مهر'        
+                elif(month == 8):
+                    return 'آبان'        
+                elif(month == 9):
+                    return 'آذر'
+            else:
+                if(month == 10):
+                    return 'دی'        
+                elif(month == 11):
+                    return 'بهمن'        
+                elif(month == 12):
+                    return 'اسفند'
+                        
     def tpno(self):
-        return self.dcpno or 0 + self.mepno or 0
-    
+        return (self.dcpno or 0) + (self.mepno or 0)
+
     class Meta:
         db_table = 'tblw_ProjectPersonel'
 
@@ -592,24 +894,7 @@ class WorkVolume(models.Model):
 
     objects = models.Manager()
     row_number_objects = WorkvolumeManager()
-
+    
     class Meta:
         db_table = 'tblw_WorkVolume'
 
-
-class ReportConfirm(models.Model):
-    reportconfirmid = models.AutoField(db_column='ReportConfirmID', primary_key=True)  # Field name made lowercase.
-    contractid = models.ForeignKey(Contract, related_name="Contract_ReportConfirm", 
-                                   on_delete=models.PROTECT, db_column='ContractID')  # Field name made lowercase.
-    dateid = models.ForeignKey(ReportDate,  related_name="ReportDate_ReportConfirm", 
-                                   on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
-    type = models.SmallIntegerField(db_column='Type', blank=True, null=True)  # Field name made lowercase.
-    user_c = models.BooleanField(db_column='User_C', blank=True, null=True)  # Field name made lowercase.
-    pm_c = models.BooleanField(db_column='PM_C', blank=True, null=True)  # Field name made lowercase.
-    sa_c = models.BooleanField(db_column='SA_C', blank=True, null=True)  # Field name made lowercase.
-    userconfirmdate = models.DateField(db_column='UserConfirmDate', blank=True, null=True)  # Field name made lowercase.
-    pmconfirmdate = models.DateField(db_column='PMConfirmDate', blank=True, null=True)  # Field name made lowercase.
-    saconfirmdate = models.DateField(db_column='SAConfirmDate', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        db_table = 'tblw_ReportConfirm'

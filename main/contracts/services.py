@@ -11,6 +11,15 @@ def GregorianToShamsi(date):
     except Exception as e:
         return str(e)
     
+def GregorianToShamsiShow(date):
+    # gregorian_date = jdatetime.date(1400,5,24).togregorian()
+    try:
+        jDate = jdatetime.date.fromgregorian(day=date.day,month=date.month,year=date.year)
+        return  '%s-%s-%s' % (str(jDate.day), str(jDate.month), str(jDate.year))
+    except Exception as e:
+        return str(e)
+    
+        
 def GregorianToShamsi1(date):
     y = (math.trunc(date.timestamp()) + 467066.53004084 - 0.641087919916919581508) / 365.24219878
     y1 = y - math.trunc(datetime.datetime.fromtimestamp(y))
@@ -32,3 +41,5 @@ def GregorianToShamsi1(date):
     result = str(math.trunc(datetime.datetime.fromtimestamp(y))) + '/' + mm + '/' + dd
     
     return result
+
+

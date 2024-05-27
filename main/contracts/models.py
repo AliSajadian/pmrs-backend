@@ -74,7 +74,11 @@ class Personel(models.Model):
         verbose_name = 'Personal'
         verbose_name_plural = 'Personals'        
       
-        
+ 
+# class CustomManager(models.Manager):
+#     def get_queryset(self):
+#         queryset = super().get_queryset()
+#         return queryset.filter(...).order_by(...)        
 class ContractType(models.Model):
     contracttypeid = models.AutoField(db_column='ContractTypeID', primary_key=True)  
     contracttype = models.CharField(db_column='ContractType', unique=True, max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')  
@@ -103,7 +107,8 @@ class Country(models.Model):
 
 class Currency(models.Model):
     currencyid = models.AutoField(db_column='CurrencyID', primary_key=True)  
-    countryid = models.ForeignKey(Country, models.DO_NOTHING, db_column='CountryID')  
+    # countryid = models.ForeignKey(Country, models.DO_NOTHING, db_column='CountryID')  
+    country =  models.CharField(db_column='Country', max_length=50, null=True, db_collation='SQL_Latin1_General_CP1_CI_AS')  
     currency = models.CharField(db_column='Currency', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')  
 
     def __str__(self) -> str:
@@ -111,7 +116,7 @@ class Currency(models.Model):
     
     class Meta:
         db_table = 'tbl_Currency'
-        unique_together = (('countryid', 'currency'),)
+        # unique_together = (('country', 'currency'),)
         verbose_name = 'Currency'
         verbose_name_plural = 'Currencies'
 
@@ -152,20 +157,41 @@ class Contract(models.Model):
     attachmentcontractprice4_fc = models.BigIntegerField(db_column='AttachmentContractPrice4_FC', blank=True, null=True)  
     attachmentcontractprice5_r = models.BigIntegerField(db_column='AttachmentContractPrice5_R', blank=True, null=True)  
     attachmentcontractprice5_fc = models.BigIntegerField(db_column='AttachmentContractPrice5_FC', blank=True, null=True) 
+    location = models.CharField(db_column='Location', max_length=20, null=True)
     latitude =  models.FloatField(db_column='Latitude', null=True)
     longitude =  models.FloatField(db_column='Longitude', null=True)
     iscompleted = models.BooleanField(db_column='IsCompleted', blank=True, null=True)  
     completeddate = models.IntegerField(db_column='CompletedDate', blank=True, null=True)  
+ 
+    def contractamount_r_(self):
+        return f"{self.contractamount_r:,}"
+
+    def contractamount_fc_(self):
+        return f"{self.contractamount_fc:,}"
+    
+    def extraWorkPrice_r(self):
+        addendumamount_r_sum = Addendum.objects.filter(
+            contractid__exact=self.contractid).aggregate(Sum('addendumamount_r'))['addendumamount_r__sum']
+        result = (addendumamount_r_sum or 0)
+        return f"{result:,}"
 
     def totalprice_r(self):
-        addendumamount_sum = Addendum.objects.filter(
+        addendumamount_r_sum = Addendum.objects.filter(
             contractid__exact=self.contractid).aggregate(Sum('addendumamount_r'))['addendumamount_r__sum']
-        return self.contractamount_r + (addendumamount_sum or 0)
+        result = self.contractamount_r + (addendumamount_r_sum or 0)
+        return f"{result:,}"
+
+    def extraWorkPrice_fc(self):
+        addendumamount_fc_sum = Addendum.objects.filter(
+            contractid__exact=self.contractid).aggregate(Sum('addendumamount_fc'))['addendumamount_fc__sum']
+        result = (addendumamount_fc_sum or 0)
+        return f"{result:,}"
 
     def totalprice_fc(self):
-        addendumamount_sum = Addendum.objects.filter(
+        addendumamount_fc_sum = Addendum.objects.filter(
             contractid__exact=self.contractid).aggregate(Sum('addendumamount_fc'))['addendumamount_fc__sum']
-        return self.contractamount_fc + (addendumamount_sum or 0)
+        result = self.contractamount_fc + (addendumamount_fc_sum or 0)
+        return f"{result:,}"
         
     def projectManager(self):
         # personal = Personel.objects.get(pk=self.projectmanagerid)
@@ -214,6 +240,15 @@ class Contract(models.Model):
         else:
             return self.duration 
 
+    def approximateFinishShamsiDate(self):
+        afteraddendumdate_max = Addendum.objects.filter(
+            contractid__exact=self.contractid).aggregate(Max('afteraddendumdate'))['afteraddendumdate__max']
+        
+        if afteraddendumdate_max is None:
+            return GregorianToShamsi(self.finishdate) if self.finishdate is not None else ''
+        else:
+            return GregorianToShamsi(afteraddendumdate_max) if afteraddendumdate_max is not None else ''
+
     def addendumDuration(self):
         afteraddendumdate_max = Addendum.objects.filter(
             contractid__exact=self.contractid).aggregate(Max('afteraddendumdate'))['afteraddendumdate__max']
@@ -226,7 +261,7 @@ class Contract(models.Model):
         startdate = datetime.strptime(str(self.finishdate), date_format)
         months = (now.year - startdate.year) * 12 + (now.month - startdate.month)
         return months
-        
+    
     def __str__(self) -> str:
         return self.contract
     
@@ -237,6 +272,9 @@ class Contract(models.Model):
         # roleid_set__tbljrolepermission__permissionid__permission    permission
         return roles
 
+    def contracttype(self):
+        return self.contracttypeid.contracttype if self.contracttypeid is not None else ''
+        
     class Meta:
         db_table = 'tbl_Contract'
         verbose_name = 'Contract'
@@ -248,7 +286,7 @@ class ContractUser(models.Model):
     contractid = models.ForeignKey(Contract, models.DO_NOTHING, db_column='ContractID')  
     userid = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, db_column='UserID')  
     type = models.BooleanField(db_column='Type', blank=True, null=True)  
-
+    
     class Meta:
         db_table = 'tbl_JContractUser'
         verbose_name = 'Contract_User'
@@ -267,21 +305,21 @@ class EpcCorporation(models.Model):
         return '%s: e=%s, p=%s, c=%s' % (self.companyid.company, self.e_percent, self.p_percent, self.c_percent)
 
     def E(self):
-        e = EpcCorporation.objects.filter(contractid__exact=self.contractid).values(
+        e = EpcCorporation.objects.filter(contractid__exact=self.contractid, e_percent__gt=0).values(
             'companyid__company', 'e_percent').annotate( value = F('e_percent'), 
-                                                        label = F('companyid__company')).values('value', 'label')  
+                                                        name = F('companyid__company')).values('value', 'name')  
         return (e)
     
     def P(self):
-        p = EpcCorporation.objects.filter(contractid__exact=self.contractid).values(
+        p = EpcCorporation.objects.filter(contractid__exact=self.contractid, p_percent__gt=0).values(
             'companyid__company', 'p_percent').annotate( value = F('p_percent'), 
-                                                        label = F('companyid__company')).values('value', 'label')  
+                                                        name = F('companyid__company')).values('value', 'name')  
         return (p)
 
     def C(self):
-        c = EpcCorporation.objects.filter(contractid__exact=self.contractid).values(
+        c = EpcCorporation.objects.filter(contractid__exact=self.contractid, c_percent__gt=0).values(
             'companyid__company', 'c_percent').annotate( value = F('c_percent'), 
-                                                        label = F('companyid__company')).values('value', 'label')  
+                                                        name = F('companyid__company')).values('value', 'name')  
         return (c)
         
     def company(self):
@@ -300,6 +338,9 @@ class Addendum(models.Model):
     addendumamount_fc = models.IntegerField(db_column='AddendumAmount_FC', null=True)  
     addendumamountdate = models.DateField(db_column='AddendumAmountDate', default=django.utils.timezone.now, null=True)  
     afteraddendumdate = models.DateField(db_column='AfterAddendumDate', null=True)  
+
+    def afteraddendumshamsidate(self):
+        return GregorianToShamsi(self.afteraddendumdate) if self.afteraddendumdate is not None else ''
 
     class Meta:
         db_table = 'tbl_Addendum'

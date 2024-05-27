@@ -22,12 +22,13 @@ class ProjectDoxSerializers(serializers.ModelSerializer):
 
 
 class ContractorDoxSerializers(serializers.ModelSerializer):
+    contractshamsidate = serializers.ReadOnlyField()
     filename = serializers.ReadOnlyField()
     
     class Meta:
-        model = ContractDox
-        fields = ('contractdoxid', 'contractid', 'dateid', 'contractdate', 'contracttitle',  
-                  'contractor', 'contractNo', 'riderno', 'filename', 'description', 'file', 'active')
+        model = ContractorDox
+        fields = ('contractordoxid', 'contractid', 'contractdate', 'contractshamsidate',  
+                  'contracttitle', 'contractor', 'contractno', 'riderno', 'file', 'filename')
 
 
 class ProjectMonthlyDoxSerializers(serializers.ModelSerializer):
@@ -41,13 +42,16 @@ class ProjectMonthlyDoxSerializers(serializers.ModelSerializer):
 
 
 class ApprovedInvoiceDoxSerializers(serializers.ModelSerializer):
+    invoiceshamsidate = serializers.ReadOnlyField()
+    sendshamsidate = serializers.ReadOnlyField()
+    confirmshamsidate = serializers.ReadOnlyField()
     filename = serializers.ReadOnlyField()
-    
+
     class Meta:
         model = InvoiceDox
-        fields = ('invoicedoxid', 'contractid', 'dateid', 'invoiceKind', 'invoiceNo',
-                  'invoiceDate', 'sendDate', 'confirmDate', 'sgp_r', 'sgp_fc', 'cgp_r', 'cgp_fc', 
-                  'filename', 'description', 'file', 'active')
+        fields = ('invoicedoxid', 'contractid', 'dateid', 'invoicekind', 'invoiceno', 'invoicedate', 
+                  'senddate', 'confirmdate', 'invoiceshamsidate', 'sendshamsidate', 'confirmshamsidate',  
+                  'sgp_r', 'sgp_fc', 'cgp_r', 'cgp_fc', 'description', 'file', 'filename', 'active')
 
 
 class ReportDoxSerializers(serializers.ModelSerializer):
@@ -62,6 +66,12 @@ class ReportVisitSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ZoneSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Zone
+        fields = ('zoneid', 'zone')
+
+
 class ZoneImagesSerializers(serializers.ModelSerializer):
     contract = serializers.ReadOnlyField
     zone = serializers.ReadOnlyField
@@ -74,22 +84,31 @@ class ZoneImagesSerializers(serializers.ModelSerializer):
         fields = ('zoneimageid', 'zoneid', 'dateid', 'contract', 'zone', 'ppp', 'app', 'img1', 'imagepath1', 
                   'description1', 'img2', 'imagepath2', 'description2', 'img3', 'imagepath3', 'description3')
        
+
+class ProjectZoneImagesSerializers(serializers.Serializer):
+    contract = serializers.CharField()
+    zone = serializers.CharField()
+    ppp = serializers.CharField()
+    app = serializers.CharField()
+    img = serializers.CharField()
+    description = serializers.CharField()
+
+    
+class ReportZoneImagesSerializers1(serializers.ModelSerializer):
+    zone = serializers.ReadOnlyField
+    explanation = serializers.ReadOnlyField
+
+    class Meta:
+        model = ZoneImage
+        fields = ('zone', 'img1', 'img2', 'img3', 'explanation')
         
-# class BookingSerializer(ModelSerializer):
-#     rooms = PrimaryKeyRelatedField(queryset=Room.objects.all(), many=True)
-#     guest = GuestSerializer
-
-#     class Meta:
-#         model = Booking
-#         fields = ['id', 'guest', 'rooms', 'booking_date', 'arrival_date', 'duration']
-
-#     def validate(self, data):
-#             rooms = data['rooms']
-#             arrival_date = data['arrival_date']
-#             duration = data['duration']
-
-#             # CHECK WHETHER ROOMS LIST ARE BOOKED BEFORE
-#             result = check_rooms_is_booked(rooms, arrival_date, duration)
-#             if result != '':
-#                 raise ValidationError(result)
-#             return data    
+        
+class ReportVisitSerializers(serializers.ModelSerializer):
+    manager = serializers.ReadOnlyField
+    class Meta:
+        model = ReportVisit
+        fields = ('manager', 'financialinfo', 'hse','progressstate', 'timeprogressstate', 'invoice', 
+                  'financialinvoice', 'workvolume', 'pmsprogress', 'budget', 'machinary', 'personel', 
+                  'problems', 'criticalactions', 'zoneimages', 'projectdox', 'durationdox', 'dashboard_r', 
+                  'dashboard_fc', 'imagereport',)
+     
