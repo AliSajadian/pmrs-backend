@@ -21,7 +21,15 @@ class ReportDateAPIEx(APIView):
         permissions.IsAuthenticated
     ]
 
-    # READ ContractS
+    '''
+        READ Report Date:
+        
+        every time read Report date model if encounter to begin of new persian month it 
+        create new record for new month in ReportDate model this way always the ReportDate 
+        contain all new persian months
+        
+        if user read ReportDate model after a few months then system create a record for each of those months
+    '''
     def get(self, request):
         max_date_id = ReportDate.objects.aggregate(Max('dateid'))['dateid__max']
         date = ReportDate.objects.get(pk=max_date_id)
@@ -84,6 +92,7 @@ class ReportConfirmAPI(viewsets.ModelViewSet):
     # permission_classes = [
     #     permissions.IsAuthenticated
     # ]
+
 
     @action(detail=False, methods=['get'])   
     def getConfirmedReports(self, request, *args, **kwargs):

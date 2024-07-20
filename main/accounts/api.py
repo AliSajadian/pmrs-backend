@@ -188,9 +188,9 @@ class ProjectConfirmersAPI(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            contractId = kwargs["contractid"]   
+            contractId = kwargs["contractid"]  
             userRoles = UserRole.objects.filter(projectid__exact=contractId)
-            serializer = ProjectConfirmersSerializers(instance=userRoles[0], many=False)
+            serializer = ProjectConfirmersSerializers(instance=(userRoles[0] if len(userRoles) > 0 else None) if userRoles is not None else None, many=False)
             return Response({"status": 'success', "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status": 'error', "data": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -276,7 +276,7 @@ class PasswordAPIView(APIView):
         serializer = PasswordSerializer(data=request.data)
         if serializer.is_valid():
             userid = serializer.data['userid']
-            username = serializer.data['username']
+            # username = serializer.data['username']
             user = self.get_object(userid)
             oldpassword = serializer.data['currentpassword']
             is_same_as_old = user.check_password(oldpassword)
@@ -294,8 +294,8 @@ class PasswordAPIView(APIView):
                 """
                 return Response({"password": ["It should be different from your last password."]},
                                 status=status.HTTP_400_BAD_REQUEST)
-            if user.username != username:
-                user.username = username
+            # if user.username != username:
+            #     user.username = username
             user.set_password(new_password)
             user.save()
             return Response({'success':True})

@@ -27,7 +27,7 @@ class HseReportDox(models.Model):
                                    on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
     date = models.DateField(db_column='Date', blank=True, null=True, default=django.utils.timezone.now)  # Field name made lowercase.
     description = models.CharField(db_column='Description', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS')  # Field name made lowercase.
-    file = models.FileField(db_column='File', storage=hse_fs, null=True, unique=True)
+    file = models.FileField(db_column='File', storage=hse_fs, max_length=250, null=True, unique=True)
     active = models.BooleanField(db_column='Active', blank=True, null=True)  # Field name made lowercase.
 
     def year(self):
@@ -82,7 +82,7 @@ class ProjectDox(models.Model):
     doctitle = models.PositiveSmallIntegerField(db_column='DocTitle', null=True)
     dockind = models.PositiveSmallIntegerField(db_column='DocKind', null=True)
     docno = models.PositiveSmallIntegerField(db_column='DocNo', null=True)
-    file = models.FileField(db_column='File', storage=projectDox_fs, null=True, unique=True)
+    file = models.FileField(db_column='File', storage=projectDox_fs, max_length=250, null=True, unique=True)
     active = models.BooleanField(db_column='Active', blank=True, null=True)  # Field name made lowercase.
 
     def filename(self):
@@ -173,7 +173,7 @@ class ContractorDox(models.Model):
     contractor = models.CharField(db_column='Contractor', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS')
     contractno = models.CharField(db_column='ContractNo', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')
     riderno = models.PositiveSmallIntegerField(db_column='RiderNo')  # Field name made lowercase.
-    file = models.FileField(db_column='File', storage=contractorDox_fs, null=True, unique=True)
+    file = models.FileField(db_column='File', storage=contractorDox_fs, max_length=250, null=True, unique=True)
 
     def contractshamsidate(self):
         return GregorianToShamsi(self.contractdate) if self.contractdate is not None else ''
@@ -221,7 +221,7 @@ class ProjectMonthlyDox(models.Model):
     dateid = models.ForeignKey(ReportDate,  related_name="ReportDate_ProjectMonthlyDox", 
                                    on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
     description = models.CharField(db_column='Description', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS')  # Field name made lowercase.
-    file = models.FileField(db_column='File', storage=projectMonthlyDox_fs, null=True, unique=True)
+    file = models.FileField(db_column='File', storage=projectMonthlyDox_fs, max_length=250, null=True, unique=True)
     active = models.BooleanField(db_column='Active', blank=True, null=True)  # Field name made lowercase.
 
     def year(self):
@@ -342,7 +342,7 @@ class ApprovedInvoiceDox(models.Model):
     cgp_r = models.IntegerField(db_column='CGP_R', null=True)
     cgp_fc = models.BigIntegerField(db_column='CGP_FC', null=True)
     description = models.CharField(db_column='Description', max_length=250, null=True, db_collation='SQL_Latin1_General_CP1_CI_AS')  # Field name made lowercase.
-    file = models.FileField(db_column='File', storage=invoiceDox_fs, null=True, unique=True)
+    file = models.FileField(db_column='File', storage=invoiceDox_fs, max_length=250, null=True)
     active = models.BooleanField(db_column='Active', blank=True, null=True)  # Field name made lowercase.
 
     def invoiceshamsidate(self):
@@ -527,13 +527,13 @@ class ZoneImage(models.Model):
     ppp = models.DecimalField(db_column='PPP', max_digits=6, decimal_places=2, blank=True, null=True)  # Field name made lowercase.
     app = models.DecimalField(db_column='APP', max_digits=6, decimal_places=2, blank=True, null=True)  # Field name made lowercase.
     pic1 = models.CharField(db_column='Pic1', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
-    img1 = models.ImageField(db_column='Img1', upload_to='zone_images', blank=True, null=True, unique=True)
+    img1 = models.ImageField(db_column='Img1', upload_to='zone_images', max_length=250, blank=True, null=True, unique=True)
     description1 = models.CharField(db_column='Description1', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
     pic2 = models.CharField(db_column='Pic2', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
-    img2 = models.ImageField(db_column='Img2', upload_to='zone_images', blank=True, null=True, unique=True)
+    img2 = models.ImageField(db_column='Img2', upload_to='zone_images', max_length=250, blank=True, null=True, unique=True)
     description2 = models.CharField(db_column='Description2', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
     pic3 = models.CharField(db_column='Pic3', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
-    img3 = models.ImageField(db_column='Img3', upload_to='zone_images', blank=True, null=True, unique=True)
+    img3 = models.ImageField(db_column='Img3', upload_to='zone_images', max_length=250, blank=True, null=True, unique=True)
     description3 = models.CharField(db_column='Description3', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  # Field name made lowercase.
 
     objects = models.Manager()

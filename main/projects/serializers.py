@@ -8,7 +8,7 @@ class ReportDateSerializerEx(serializers.ModelSerializer):
     shamsiDate = serializers.ReadOnlyField()
     class Meta:
         model = ReportDate
-        fields = ('dateid', 'shamsiDate')
+        fields = ('dateid', 'year', 'month', 'shamsiDate')
         
 
 class ReportConfirmSerializer(serializers.ModelSerializer):
@@ -246,11 +246,12 @@ class BudgetCostSerializer(serializers.ModelSerializer):
     # row_number = serializers.ReadOnlyField() , "row_number"
     year = serializers.ReadOnlyField()
     month = serializers.ReadOnlyField()
+    isConfirmed = serializers.ReadOnlyField()
 
     class Meta:
         model = Budgetcost
         fields = ("budgetcostid", "contractid", "dateid", "bac_r", "bac_fc", "eac_r", "eac_fc", "ev_r", 
-                  "ev_fc", "ac_r", "ac_fc", "description", "year", "month")
+                  "ev_fc", "ac_r", "ac_fc", "description", "year", "month", "isConfirmed")
 
 class BudgetCostReportSerializer(serializers.ModelSerializer):
     persianMonth = serializers.ReadOnlyField()

@@ -73,8 +73,6 @@ class PmrsUser(AbstractUser):
         return '%s %s' % (self.first_name, self.last_name)
     
     
-
-
 class User(models.Model):
     userid = models.IntegerField(db_column='UserID', primary_key=True)  # Field name made lowercase.
     user = models.CharField(db_column='User', unique=True, max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')  # Field name made lowercase.

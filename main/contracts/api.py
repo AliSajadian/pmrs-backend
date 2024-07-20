@@ -180,7 +180,7 @@ class ContractInfo(APIView):
     def get_ContractConsultant(request, id):
         try:
             contractConsultants = ContractConsultant.objects.filter(contractid__exact=id)
-            serializer = ContractConsultantSerializer(contractConsultants, many=True)
+            serializer = ContractConsultantSerializer((contractConsultants if len(contractConsultants) > 0 else None) if contractConsultants is not None else None, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

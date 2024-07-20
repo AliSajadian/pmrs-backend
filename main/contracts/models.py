@@ -74,11 +74,7 @@ class Personel(models.Model):
         verbose_name = 'Personal'
         verbose_name_plural = 'Personals'        
       
- 
-# class CustomManager(models.Manager):
-#     def get_queryset(self):
-#         queryset = super().get_queryset()
-#         return queryset.filter(...).order_by(...)        
+   
 class ContractType(models.Model):
     contracttypeid = models.AutoField(db_column='ContractTypeID', primary_key=True)  
     contracttype = models.CharField(db_column='ContractType', unique=True, max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')  
@@ -228,7 +224,7 @@ class Contract(models.Model):
         return GregorianToShamsi(self.planstartdate) if self.planstartdate is not None else ''
     
     def passedDuration(self):
-        if not self.iscompleted:
+        if not self.iscompleted and self.startdate is not None:
             date_format = "%Y-%m-%d"
             now = datetime.strptime(str(datetime.now().date()), date_format)
             startdate = datetime.strptime(str(self.startdate), date_format)
@@ -247,7 +243,7 @@ class Contract(models.Model):
         if afteraddendumdate_max is None:
             return GregorianToShamsi(self.finishdate) if self.finishdate is not None else ''
         else:
-            return GregorianToShamsi(afteraddendumdate_max) if afteraddendumdate_max is not None else ''
+            return GregorianToShamsi(afteraddendumdate_max)
 
     def addendumDuration(self):
         afteraddendumdate_max = Addendum.objects.filter(
@@ -367,8 +363,12 @@ class ContractConsultant(models.Model):
     consultantid = models.ForeignKey(Company, models.DO_NOTHING, db_column='ConsultantID')  
 
     def consultant(self):
-        return self.consultantid.company if self.consultantid is not None else ''
-    
+        try:
+            return (self.consultantid.company if self.consultantid.company is not None else '') if self.consultantid is not None else ''
+        except:
+            return ''
+            
+        
     class Meta:
         db_table = 'tbl_JContractConsultant'
         verbose_name = 'Contract_Consultant'
@@ -382,15 +382,6 @@ class ContractContractor(models.Model):
 
     class Meta:
         db_table = 'tbl_JContractContractor'
-
-
-class CostCenter(models.Model):
-    costcenterid = models.IntegerField(db_column='CostCenterID')  
-    contractid = models.IntegerField(db_column='ContractID')  
-    costcenter = models.CharField(db_column='CostCenter', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS')  
-
-    class Meta:
-        db_table = 'tbl_CostCenter'
 
 
 class DateConversion(models.Model):
@@ -425,173 +416,4 @@ class FinancialDocuments(models.Model):
 
     class Meta:
         db_table = 'tbl_FinancialDocuments'
-
-
-class Schedule(models.Model):
-    scheduleid = models.AutoField(db_column='ScheduleID', primary_key=True)  
-    contractid = models.ForeignKey(Contract, models.CASCADE, db_column='ContractID')  
-    financialdocument = models.ManyToManyField(FinancialDocuments, through='ScheduleFinancialDocument')
-    parentsteps = models.CharField(db_column='ParentSteps', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    level = models.SmallIntegerField(db_column='Level', blank=True, null=True)  
-    step = models.SmallIntegerField(db_column='Step', blank=True, null=True)  
-    tasktype = models.SmallIntegerField(db_column='TaskType', blank=True, null=True)  
-    task = models.CharField(db_column='Task', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    wf = models.FloatField(db_column='WF', blank=True, null=True)  
-    currencyprice = models.IntegerField(db_column='CurrencyPrice', blank=True, null=True)  
-    tcp_r = models.BigIntegerField(db_column='TCP_R', blank=True, null=True)  
-    tcp_fc = models.IntegerField(db_column='TCP_FC', blank=True, null=True)  
-    tcp_t = models.BigIntegerField(db_column='TCP_T', blank=True, null=True)  
-    bac_r = models.BigIntegerField(db_column='BAC_R', blank=True, null=True)  
-    bac_fc = models.IntegerField(db_column='BAC_FC', blank=True, null=True)  
-    bac_t = models.BigIntegerField(db_column='BAC_T', blank=True, null=True)  
-    i_r = models.BigIntegerField(db_column='I_R', blank=True, null=True)  
-    i_fc = models.IntegerField(db_column='I_FC', blank=True, null=True)  
-    i_t = models.BigIntegerField(db_column='I_T', blank=True, null=True)  
-    i_date = models.DateField(db_column='I_Date', blank=True, null=True)  
-    ev_r = models.BigIntegerField(db_column='EV_R', blank=True, null=True)  
-    ev_fc = models.IntegerField(db_column='EV_FC', blank=True, null=True)  
-    ev_t = models.BigIntegerField(db_column='EV_T', blank=True, null=True)  
-    ev_kind_r = models.CharField(db_column='EV_Kind_R', max_length=30, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    ev_kind_fc = models.CharField(db_column='EV_Kind_FC', max_length=30, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    pp_r = models.FloatField(db_column='PP_R', blank=True, null=True)  
-    pp_fc = models.FloatField(db_column='PP_FC', blank=True, null=True)  
-    ac_r = models.BigIntegerField(db_column='AC_R', blank=True, null=True)  
-    ac_fc = models.IntegerField(db_column='AC_FC', blank=True, null=True)  
-    ac_t = models.BigIntegerField(db_column='AC_T', blank=True, null=True)  
-    pc_r = models.BigIntegerField(db_column='PC_R', blank=True, null=True)  
-    pc_fc = models.IntegerField(db_column='PC_FC', blank=True, null=True)  
-    pc_t = models.BigIntegerField(db_column='PC_T', blank=True, null=True)  
-    ac_p_r = models.BigIntegerField(db_column='AC_P_R', blank=True, null=True)  
-    ac_p_fc = models.IntegerField(db_column='AC_P_FC', blank=True, null=True)  
-    ac_p_t = models.BigIntegerField(db_column='AC_P_T', blank=True, null=True)  
-    ac_z_r = models.BigIntegerField(db_column='AC_Z_R', blank=True, null=True)  
-    ac_z_fc = models.IntegerField(db_column='AC_Z_FC', blank=True, null=True)  
-    etc_r = models.BigIntegerField(db_column='ETC_R', blank=True, null=True)  
-    etc_fc = models.IntegerField(db_column='ETC_FC', blank=True, null=True)  
-    etc_t = models.BigIntegerField(db_column='ETC_T', blank=True, null=True)  
-    planstartdate = models.DateField(db_column='PlanStartDate', blank=True, null=True)  
-    planfinishdate = models.DateField(db_column='PlanFinishDate', blank=True, null=True)  
-    actualstartdate = models.DateField(db_column='ActualStartDate', blank=True, null=True)  
-    actualfinishdate = models.DateField(db_column='ActualFinishDate', blank=True, null=True)  
-    tep_r = models.BigIntegerField(db_column='TEP_R', blank=True, null=True)  
-    tep_fc = models.IntegerField(db_column='TEP_FC', blank=True, null=True)  
-    userid = models.IntegerField(db_column='UserID', blank=True, null=True)  
-    action = models.SmallIntegerField(db_column='Action', blank=True, null=True)  
-    actiondate = models.DateField(db_column='ActionDate', blank=True, null=True)  
-    active = models.BooleanField(db_column='Active', blank=True, null=True)  
-    epc_main = models.BooleanField(db_column='EPC_Main', blank=True, null=True)  
-    costcenterid = models.IntegerField(db_column='CostCenterID', blank=True, null=True)  
-    overheadgroupid = models.IntegerField(db_column='OverheadGroupID', blank=True, null=True)  
-    definitiveid = models.IntegerField(db_column='DefinitiveID', blank=True, null=True)  
-    note = models.CharField(db_column='Note', max_length=200, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    parentid = models.IntegerField(db_column='ParentID')  
-
-    class Meta:
-        db_table = 'tbl_Schedule'
-
-
-class ScheduleFinancialDocument(models.Model):
-    schedulefinancialdocumentid = models.AutoField(db_column='ScheduleFinancialDocumentID', primary_key=True)  
-    scheduleid = models.ForeignKey(Schedule, related_name="Schedule_ScheduleFinancialdocuments", on_delete=models.PROTECT, db_column='ScheduleID')  
-    documentid = models.ForeignKey(FinancialDocuments, related_name="Schedule_ScheduleFinancialdocuments", on_delete=models.PROTECT, db_column='DocumentID')  
-    recievedprice = models.BigIntegerField(db_column='RecievedPrice', blank=True, null=True)  
-    percentrecievedprice = models.DecimalField(db_column='PercentRecievedPrice', max_digits=23, decimal_places=20, blank=True, null=True)  
-    problem = models.BooleanField(blank=True, null=True)
-    currencyratio = models.DecimalField(db_column='CurrencyRatio', max_digits=6, decimal_places=2, blank=True, null=True)  
-    date = models.DateField(db_column='Date')  
-
-    class Meta:
-        db_table = 'Tbl_JScheduleFinancialDocument'
-
-
-class Grant(models.Model):
-    scheduleid = models.IntegerField(db_column='ScheduleID')  
-    parentid = models.IntegerField(db_column='ParentID')  
-    step = models.IntegerField(db_column='Step')  
-
-    class Meta:
-        db_table = 'tbl_Grant'
-
-
-class ContractCostCenter(models.Model):
-    contractcostcenterid = models.IntegerField(db_column='ContractCostCenterID')  
-    contractid = models.IntegerField(db_column='ContractID')  
-    costcenterid = models.IntegerField(db_column='CostCenterID')  
-
-    class Meta:
-        db_table = 'tbl_JContractCostCenter'
-
-
-class OverheadGroup(models.Model):
-    overheadgroupid = models.AutoField(db_column='OverheadGroupID', primary_key=True)  
-    overheadgroup = models.CharField(db_column='OverheadGroup', max_length=100, db_collation='SQL_Latin1_General_CP1_CI_AS')  
-    contractid = models.ForeignKey(Contract, models.DO_NOTHING, db_column='ContractID')  
-
-    class Meta:
-        db_table = 'tbl_OverheadGroup'
-
-
-class OverheadItem(models.Model):
-    overheaditemid = models.AutoField(db_column='OverheadItemID', primary_key=True)  
-    overheadgroupid = models.ForeignKey(OverheadGroup, models.DO_NOTHING, db_column='OverheadGroupID')  
-    definitiveid = models.IntegerField(db_column='DefinitiveID')  
-
-    class Meta:
-        db_table = 'tbl_OverheadItem'
-
-
-class ScheduleBackup(models.Model):
-    schedulebackupid = models.AutoField(db_column='ScheduleBackupID', primary_key=True)  
-    scheduleid = models.IntegerField(db_column='ScheduleID')  
-    contractid = models.IntegerField(db_column='ContractID')  
-    parentsteps = models.CharField(db_column='ParentSteps', max_length=50, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    level = models.SmallIntegerField(db_column='Level', blank=True, null=True)  
-    step = models.SmallIntegerField(db_column='Step', blank=True, null=True)  
-    tasktype = models.SmallIntegerField(db_column='TaskType', blank=True, null=True)  
-    task = models.CharField(db_column='Task', max_length=250, db_collation='SQL_Latin1_General_CP1_CI_AS', blank=True, null=True)  
-    wf = models.FloatField(db_column='WF', blank=True, null=True)  
-    tcp_r = models.BigIntegerField(db_column='TCP_R', blank=True, null=True)  
-    tcp_fc = models.IntegerField(db_column='TCP_FC', blank=True, null=True)  
-    bac_r = models.BigIntegerField(db_column='BAC_R', blank=True, null=True)  
-    bac_fc = models.IntegerField(db_column='BAC_FC', blank=True, null=True)  
-    i_r = models.BigIntegerField(db_column='I_R', blank=True, null=True)  
-    i_fc = models.IntegerField(db_column='I_FC', blank=True, null=True)  
-    ev_r = models.BigIntegerField(db_column='EV_R', blank=True, null=True)  
-    ev_fc = models.IntegerField(db_column='EV_FC', blank=True, null=True)  
-    pp = models.FloatField(db_column='PP', blank=True, null=True)  
-    ac_r = models.BigIntegerField(db_column='AC_R', blank=True, null=True)  
-    ac_fc = models.IntegerField(db_column='AC_FC', blank=True, null=True)  
-    ac_p_r = models.BigIntegerField(db_column='AC_P_R', blank=True, null=True)  
-    ac_p_fc = models.IntegerField(db_column='AC_P_FC', blank=True, null=True)  
-    ac_z_r = models.BigIntegerField(db_column='AC_Z_R', blank=True, null=True)  
-    ac_z_fc = models.IntegerField(db_column='AC_Z_FC', blank=True, null=True)  
-    etc_r = models.BigIntegerField(db_column='ETC_R', blank=True, null=True)  
-    etc_fc = models.IntegerField(db_column='ETC_FC', blank=True, null=True)  
-    planstartdate = models.DateField(db_column='PlanStartDate', blank=True, null=True)  
-    planfinishdate = models.DateField(db_column='PlanFinishDate', blank=True, null=True)  
-    actualstartdate = models.DateField(db_column='ActualStartDate', blank=True, null=True)  
-    actualfinishdate = models.DateField(db_column='ActualFinishDate', blank=True, null=True)  
-    tep_r = models.BigIntegerField(db_column='TEP_R', blank=True, null=True)  
-    tep_fc = models.IntegerField(db_column='TEP_FC', blank=True, null=True)  
-    userid = models.IntegerField(db_column='UserID', blank=True, null=True)  
-    action = models.SmallIntegerField(db_column='Action', blank=True, null=True)  
-    actiondate = models.DateField(db_column='ActionDate', blank=True, null=True)  
-    active = models.BooleanField(db_column='Active', blank=True, null=True)  
-    epc_main = models.BooleanField(db_column='EPC_Main', blank=True, null=True)  
-    parentid = models.IntegerField(db_column='ParentID')  
-    version = models.SmallIntegerField(db_column='Version')  
-
-    class Meta:
-        db_table = 'tbl_ScheduleBackup'
-
-
-class ScheduleCellArchive(models.Model):
-    schedulecellarchiveid = models.AutoField(db_column='ScheduleCellArchiveID', primary_key=True)  
-    scheduleid = models.IntegerField(db_column='ScheduleID')  
-    cell = models.SmallIntegerField(db_column='Cell')  
-    value = models.DecimalField(db_column='Value', max_digits=18, decimal_places=2)  
-    enterdate = models.DateTimeField(db_column='EnterDate')  
-
-    class Meta:
-        db_table = 'tbl_ScheduleCellArchive'
 
