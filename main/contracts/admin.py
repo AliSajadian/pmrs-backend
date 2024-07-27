@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import *
+from django import forms
 from django.contrib.auth import get_user_model
 PmrsUser = get_user_model()
 
@@ -125,8 +126,22 @@ class ContractTypeAdmin(admin.ModelAdmin):
     # def has_add_permission(self, request):
     #     return ("add" in request.path or "change" in request.path)
 
+class ContractForm(forms.ModelForm):
+    class Meta:
+        model = Contract
+        fields = ('contractno', 'contract', 'contracttypeid', 
+              'customerid', 'coordinatorid',  
+              'startoperationdate', 'finishdate',  'notificationdate', 'validationdate', 'planstartdate', 'startdate', 'duration', 
+               'contractamount_r', 'contractamount_fc', 'currencyid', 
+               'prepaymentpercent',  'insurancepercent', 'perforcebondpercent',  'withholdingtaxpercent', 
+               'latitude', 'longitude', 
+               'iscompleted'
+               )
+        widgets = {'contractno': forms.TextInput(attrs={'dir': 'rtl', 'class': 'vTextField'})}
+    
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
+    form = ContractForm
     list_display = ('contractno', 'contract', 'get_contractType', 'duration')
     fields = ('contractno', 'contract', 'contracttypeid', 
               'customerid', 'coordinatorid',  
