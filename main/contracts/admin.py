@@ -167,7 +167,7 @@ class ContractAdmin(admin.ModelAdmin):
     @admin.display(ordering='Contract__ContractType', description='contract type')
     def get_contractType(self, obj):
         return obj.contracttypeid.contracttype
-      
+    
 # @admin.register(ContractUser)
 # class ContractUserAdmin(admin.ModelAdmin):
 #     list_display = ('contractuserid', 'get_user', 'get_contract')
