@@ -5,6 +5,7 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+from datetime import datetime
 import os
 from django.db import models
 from django.db.models import F, Q, Sum
@@ -305,7 +306,7 @@ class Invoice(models.Model):
                                    on_delete=models.PROTECT, db_column='ContractID')  # Field name made lowercase.
     dateid = models.ForeignKey(ReportDate,  related_name="ReportDate_Invoice", 
                                    on_delete=models.PROTECT, db_column='DateID')  # Field name made lowercase.
-    senddate = models.DateTimeField(db_column='SendDate', blank=True, null=True)  # Field name made lowercase.
+    senddate = models.DateTimeField(db_column='SendDate', default=datetime.now().date(), blank=True, null=True)  # Field name made lowercase.
     aci_g_r = models.BigIntegerField(db_column='ACI_G_R', blank=True, null=True)  # Field name made lowercase.
     aci_g_fc = models.BigIntegerField(db_column='ACI_G_FC', blank=True, null=True)  # Field name made lowercase.
     aca_g_r = models.BigIntegerField(db_column='ACA_G_R', blank=True, null=True)  # Field name made lowercase.

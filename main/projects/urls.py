@@ -27,6 +27,8 @@ urlpatterns = [
     path('api/reportConfirm/isCoordinatorConfirmedReport/', ReportConfirmAPI.as_view({"post": "isCoordinatorConfirmedReport"})),    
     path('api/reportConfirm/confirmedReports/<int:contract_id>/<int:date_id>/', ReportConfirmAPI.as_view({"get": "getConfirmedReports"})),   
 
+    path('api/financialInfos/updateFinancialInfo/<int:financialInfoId>/', FinancialInfoAPI.as_view({"post": "updateFinancialInfo"})),    
+
     path('api/financialInfos/contractMonthList/', FinancialInfoAPI.as_view({"post": "contractMonthList"})),    
     path('api/hses/contractMonthList/', HseAPI.as_view({"post": "contractMonthList"})),    
     path('api/progressStates/contractMonthList/', ProgressStateAPI.as_view({"post": "contractMonthList"})),

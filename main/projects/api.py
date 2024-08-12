@@ -257,6 +257,116 @@ class FinancialInfoAPI(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods='post')
+    def updateFinancialInfo(self, request, *args, **kwargs):
+        try:
+            financialInfoId = int(kwargs["financialInfoId"])
+            
+            data = request.data
+            contractId = int(data["contractid"])
+            dateId = int(data["dateid"])
+            lastclaimedinvoice_r = int(data["lastclaimedinvoice_r"])
+            lastclaimedinvoice_fc = int(data["lastclaimedinvoice_fc"])
+            lci_no = int(data["lci_no"])
+            lastverifiedinvoice_r = int(data["lastverifiedinvoice_r"])
+            lastverifiedinvoice_fc = int(data["lastverifiedinvoice_fc"])
+            lvi_no = int(data["lvi_no"])
+            lastclaimedadjustmentinvoice_r = int(data["lastclaimedadjustmentinvoice_r"])
+            lastclaimedadjustmentinvoice_fc = int(data["lastclaimedadjustmentinvoice_fc"])
+            lcai_no = int(data["lcai_no"])
+            lastverifiedadjustmentinvoice_r = int(data["lastverifiedadjustmentinvoice_r"])
+            lastverifiedadjustmentinvoice_fc = int(data["lastverifiedadjustmentinvoice_fc"])
+            lvai_no = int(data["lvai_no"])
+            lastclaimedextraworkinvoice_r = int(data["lastclaimedextraworkinvoice_r"])
+            lastclaimedextraworkinvoice_fc = int(data["lastclaimedextraworkinvoice_fc"])
+            lcewi_no = int(data["lcewi_no"])
+            lastverifiedextraworkinvoice_r = int(data["lastverifiedextraworkinvoice_r"])
+            lastverifiedextraworkinvoice_fc = int(data["lastverifiedextraworkinvoice_fc"])
+            lvewi_no = int(data["lvewi_no"])
+            lastclaimbill_r = int(data["lastclaimbill_r"])
+            lastclaimbill_fc = int(data["lastclaimbill_fc"])
+            lcb_no = int(data["lcb_no"])
+            lastclaimbillverified_r = int(data["lastclaimbillverified_r"])
+            lastclaimbillverified_fc = int(data["lastclaimbillverified_fc"])
+            lcbv_no = int(data["lcbv_no"])
+            lastclaimbillrecievedamount_r = int(data["lastclaimbillrecievedamount_r"])
+            lastclaimbillrecievedamount_fc = int(data["lastclaimbillrecievedamount_fc"])
+            cumulativeclientpayment_r = int(data["cumulativeclientpayment_r"])
+            cumulativeclientpayment_fc = int(data["cumulativeclientpayment_fc"])
+            clientprepaymentdeferment_r = int(data["clientprepaymentdeferment_r"])
+            clientprepaymentdeferment_fc = int(data["clientprepaymentdeferment_fc"])
+            estcost_r = int(data["estcost_r"])
+            estcost_fc = int(data["estcost_fc"])
+            estclientpayment_r = int(data["estclientpayment_r"])
+            estclientpayment_fc = int(data["estclientpayment_fc"])
+            estdebitcredit_r = int(data["estdebitcredit_r"])
+            estdebitcredit_fc = int(data["estdebitcredit_fc"])
+            
+            financialInfo = FinancialInfo.objects.get(financialinfoid__exact=financialInfoId)
+            financialInfo.lastclaimedinvoice_r=lastclaimedinvoice_r
+            financialInfo.lastclaimedinvoice_fc=lastclaimedinvoice_fc
+            financialInfo.lci_no=lci_no
+            financialInfo.lastverifiedinvoice_r=lastverifiedinvoice_r
+            financialInfo.lastverifiedinvoice_fc=lastverifiedinvoice_fc
+            financialInfo.lvi_no=lvi_no
+            financialInfo.lastclaimedadjustmentinvoice_r=lastclaimedadjustmentinvoice_r
+            financialInfo.lastclaimedadjustmentinvoice_fc=lastclaimedadjustmentinvoice_fc
+            financialInfo.lcai_no=lcai_no
+            financialInfo.lastverifiedadjustmentinvoice_r=lastverifiedadjustmentinvoice_r
+            financialInfo.lastverifiedadjustmentinvoice_fc=lastverifiedadjustmentinvoice_fc
+            financialInfo.lvai_no=lvai_no
+            financialInfo.lastclaimedextraworkinvoice_r=lastclaimedextraworkinvoice_r
+            financialInfo.lastclaimedextraworkinvoice_fc=lastclaimedextraworkinvoice_fc
+            financialInfo.lcewi_no=lcewi_no
+            financialInfo.lastverifiedextraworkinvoice_r=lastverifiedextraworkinvoice_r
+            financialInfo.lastverifiedextraworkinvoice_fc=lastverifiedextraworkinvoice_fc
+            financialInfo.lvewi_no=lvewi_no
+            financialInfo.lastclaimbill_r=lastclaimbill_r
+            financialInfo.lastclaimbill_fc=lastclaimbill_fc
+            financialInfo.lcb_no=lcb_no
+            financialInfo.lastclaimbillverified_r=lastclaimbillverified_r
+            financialInfo.lastclaimbillverified_fc=lastclaimbillverified_fc
+            financialInfo.lcbv_no=lcbv_no
+            financialInfo.lastclaimbillrecievedamount_r=lastclaimbillrecievedamount_r
+            financialInfo.lastclaimbillrecievedamount_fc=lastclaimbillrecievedamount_fc
+            financialInfo.cumulativeclientpayment_r=cumulativeclientpayment_r
+            financialInfo.cumulativeclientpayment_fc=cumulativeclientpayment_fc
+            financialInfo.clientprepaymentdeferment_r=clientprepaymentdeferment_r
+            financialInfo.clientprepaymentdeferment_fc=clientprepaymentdeferment_fc
+            financialInfo.estcost_r=estcost_r
+            financialInfo.estcost_fc=estcost_fc
+            financialInfo.estclientpayment_r=estclientpayment_r
+            financialInfo.estclientpayment_fc=estclientpayment_fc
+            financialInfo.estdebitcredit_r=estdebitcredit_r
+            financialInfo.estdebitcredit_fc=estdebitcredit_fc
+            financialInfo.save()
+            
+            invoice_r = Invoice.objects.filter(contractid__exact=contractId, dateid__exact=dateId, r__exact=True).first()
+            if invoice_r:
+                invoice_r.aci_n_r=lastverifiedinvoice_r
+                invoice_r.aca_n_r=lastverifiedadjustmentinvoice_r
+                invoice_r.ew_n_r=lastverifiedextraworkinvoice_r
+                invoice_r.icc_n_r=lastclaimedinvoice_r
+                invoice_r.acc_n_r=lastclaimedadjustmentinvoice_r
+                invoice_r.ewcc_n_r=lastclaimedextraworkinvoice_r
+                invoice_r.save()
+            
+            invoice_fc = Invoice.objects.filter(contractid__exact=contractId, dateid__exact=dateId, r__exact=False).first()
+            if invoice_fc:
+                invoice_fc.aci_n_fc=lastverifiedinvoice_fc
+                invoice_fc.aca_n_fc=lastverifiedadjustmentinvoice_fc
+                invoice_fc.ew_n_fc=lastverifiedextraworkinvoice_fc
+                invoice_fc.icc_n_fc=lastclaimedinvoice_fc
+                invoice_fc.acc_n_fc=lastclaimedadjustmentinvoice_fc
+                invoice_fc.ewcc_n_fc=lastclaimedextraworkinvoice_fc
+                invoice_fc.save()
+
+            financialinfos = FinancialInfo.objects.filter(contractid__exact=contractId, dateid__exact=dateId)
+            serializer = FinancialInfoSerializer(instance=financialinfos[0] if len(financialinfos) > 0 else None, many=False)
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class HseAPI(viewsets.ModelViewSet):
     queryset = Hse.objects.all()
@@ -328,7 +438,7 @@ class ProgressStateAPI(viewsets.ModelViewSet):
                 date = ReportDate.objects.get(pk=dateId)
                 ProgressState.objects.update_or_create(contractid=contract ,dateid=date, 
                                                        defaults={
-                                                       'plan_replan':'', 'pp_e':0, 'ap_e':0, 'pp_p':0, 'ap_p':0,  
+                                                       'plan_replan':'00', 'pp_e':0, 'ap_e':0, 'pp_p':0, 'ap_p':0,  
                                                        'pp_c':0, 'ap_c':0, 'pp_t':0, 'ap_t':0, 'pr_t':0, 'pfc_t':0})
             
             progressStates = ProgressState.objects.filter(contractid__exact=contractId, dateid__lte=dateId).order_by('dateid')
@@ -342,7 +452,7 @@ class ProgressStateAPI(viewsets.ModelViewSet):
         try:
             contractId = int(kwargs["contractid"])
             dateId = int(kwargs["dateid"])
-                   
+            
             progressStates = ProgressState.objects.filter(contractid__exact=contractId, dateid__lte=dateId).order_by('-dateid')[:6:-1]
             serializer = ProgressStateReportSerializer(instance=progressStates, many=True)
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -374,7 +484,7 @@ class TimeProgressStateAPI(viewsets.ModelViewSet):
                 contract = Contract.objects.get(pk=contractId)
                 date = ReportDate.objects.get(pk=dateId)
                 TimeprogressState.objects.update_or_create(contractid=contract ,dateid=date, 
-                                                           defaults={'plan_replan':'', 'eep_date':None, 'eee_date':None, 
+                                                           defaults={'plan_replan':'00', 'eep_date':None, 'eee_date':None, 
                                                            'epp_date':None, 'epe_date':None, 'ecp_date':None, 
                                                            'ece_date':None, 'epjp_date':None, 'epje_date':None})
             
@@ -410,25 +520,44 @@ class InvoiceAPI(viewsets.ModelViewSet):
                 date = ReportDate.objects.get(pk=dateId)
                 financialInfos = FinancialInfo.objects.filter(contractid__exact=contractId, dateid__exact=dateId)
                 
-                Invoice.objects.update_or_create(contractid=contract ,dateid=date, defaults={'senddate':None, 
-                                        'aci_g_r':None, 'aci_n_r':financialInfos[0].lastverifiedinvoice_r if financialInfos and len(financialInfos) > 0 else 0, 
-                                        'aci_g_fc':None, 'aci_n_fc':financialInfos[0].lastverifiedinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
-                                        'aca_g_r':None, 'aca_n_r':financialInfos[0].lastverifiedadjustmentinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
-                                        'aca_g_fc':None, 'aca_n_fc':financialInfos[0].lastverifiedadjustmentinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
-                                        'ew_g_r':None, 'ew_n_r':financialInfos[0].lastverifiedextraworkinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
-                                        'ew_g_fc':None, 'ew_n_fc':financialInfos[0].lastverifiedextraworkinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
-                                        'icc_g_r':None, 'icc_n_r':financialInfos[0].lastclaimedinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
-                                        'icc_g_fc':None, 'icc_n_fc':financialInfos[0].lastclaimedinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
-                                        'acc_g_r':None, 'acc_n_r':financialInfos[0].lastclaimedadjustmentinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
-                                        'acc_g_fc':None, 'acc_n_fc':financialInfos[0].lastclaimedadjustmentinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
-                                        'ewcc_g_r':None, 'ewcc_n_r':financialInfos[0].lastclaimedextraworkinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
-                                        'ewcc_g_fc':None, 'ewcc_n_fc':financialInfos[0].lastclaimedextraworkinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
-                                        'cvat_r':None, 'cvat_fc':None, 'cpi_r':None, 'cpi_fc':None, 'ccpi_a_r':None, 'ccpi_a_fc':None,
-                                        'ccpi_a_vat_r':None, 'ccpi_a_vat_fc':None, 'ccpi_a_vat_ew_r':None, 'ccpi_a_vat_ew_fc':None, 
-                                        'cp_pp_r':None, 'cp_pp_fc':None, 'pp_pp_r':None, 'pp_pp_fc':None, 'r':None, 'm':None, 'description':None})
+                Invoice.objects.update_or_create(contractid=contract ,dateid=date, r=True, defaults={ 'senddate': datetime.now(),
+                                        'aci_g_r':0, 'aci_n_r':financialInfos[0].lastverifiedinvoice_r if financialInfos and len(financialInfos) > 0 else 0, 
+                                        'aci_g_fc':None, 'aci_n_fc':None,
+                                        'aca_g_r':0, 'aca_n_r':financialInfos[0].lastverifiedadjustmentinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'aca_g_fc':None, 'aca_n_fc':None,
+                                        'ew_g_r':0, 'ew_n_r':financialInfos[0].lastverifiedextraworkinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ew_g_fc':None, 'ew_n_fc':None,
+                                        'icc_g_r':0, 'icc_n_r':financialInfos[0].lastclaimedinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'icc_g_fc':None, 'icc_n_fc':None,
+                                        'acc_g_r':0, 'acc_n_r':financialInfos[0].lastclaimedadjustmentinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'acc_g_fc':None, 'acc_n_fc':None,
+                                        'ewcc_g_r':0, 'ewcc_n_r':financialInfos[0].lastclaimedextraworkinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ewcc_g_fc':None, 'ewcc_n_fc':None,
+                                        'cvat_r':0, 'cvat_fc':None, 'cpi_r':0, 'cpi_fc':None, 'ccpi_a_r':0, 'ccpi_a_fc':None,
+                                        'ccpi_a_vat_r':0, 'ccpi_a_vat_fc':None, 'ccpi_a_vat_ew_r':0, 'ccpi_a_vat_ew_fc':None, 
+                                        'cp_pp_r':0, 'cp_pp_fc':None, 'pp_pp_r':0, 'pp_pp_fc':None, 'm':False, 'description':None})
+
+                Invoice.objects.update_or_create(contractid=contract ,dateid=date, r=False, defaults={ 'senddate': datetime.now(),
+                                        'aci_g_fc':0, 'aci_n_fc':financialInfos[0].lastverifiedinvoice_fc if financialInfos and len(financialInfos) > 0 else 0, 
+                                        'aci_g_r':None, 'aci_n_r':None,
+                                        'aca_g_fc':0, 'aca_n_fc':financialInfos[0].lastverifiedadjustmentinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'aca_g_r':None, 'aca_n_r':None,
+                                        'ew_g_fc':0, 'ew_n_fc':financialInfos[0].lastverifiedextraworkinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ew_g_r':None, 'ew_n_r':None,
+                                        'icc_g_fc':0, 'icc_n_fc':financialInfos[0].lastclaimedinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'icc_g_r':None, 'icc_n_r':None,
+                                        'acc_g_fc':0, 'acc_n_fc':financialInfos[0].lastclaimedadjustmentinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'acc_g_r':None, 'acc_n_r':None,
+                                        'ewcc_g_fc':0, 'ewcc_n_fc':financialInfos[0].lastclaimedextraworkinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ewcc_g_r':None, 'ewcc_n_r':None,
+                                        'cvat_fc':0, 'cvat_r':None, 'cpi_fc':0, 'cpi_r':None, 'ccpi_a_fc':0, 'ccpi_a_r':None,
+                                        'ccpi_a_vat_fc':0, 'ccpi_a_vat_r':None, 'ccpi_a_vat_ew_fc':0, 'ccpi_a_vat_ew_r':None, 
+                                        'cp_pp_fc':0, 'cp_pp_r':None, 'pp_pp_fc':0, 'pp_pp_r':None, 'm':False, 'description':None})
             
+                        
             invoices = Invoice.objects.filter(contractid__exact=contractId, dateid__lte=dateId).order_by('dateid')
-            serializer = InvoiceSerializer(instance=invoices, many=True)
+            serializer = InvoiceSerializer(data=invoices, many=True)
+            serializer.is_valid()
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -481,19 +610,54 @@ class FinancialInvoiceAPI(viewsets.ModelViewSet):
             if flg == 0:
                 contract = Contract.objects.get(pk=contractId)
                 date = ReportDate.objects.get(pk=dateId)
-                FinancialInvoice.objects.update_or_create(contractid=contract ,dateid=date, defaults={'senddate':None, 'invoicetype':'', 'alino':None,
-                                             'almino':None, 'aci_g_r':None, 'aci_g_fc':None, 'aca_g_r':None, 'aca_g_fc':None, 
-                                             'ew_g_r':None, 'ew_g_fc':None, 'icc_g_r':None, 'icc_g_fc':None, 'acc_g_r':None, 
-                                             'acc_g_fc':None, 'ewcc_g_r':None, 'ewcc_g_fc':None, 'aci_n_r':None, 'aci_n_fc':None,
-                                             'aca_n_r':None, 'aca_n_fc':None, 'ew_n_r':None, 'ew_n_fc':None, 'icc_n_r':None, 
-                                             'icc_n_fc':None, 'acc_n_r':None, 'acc_n_fc':None, 'ewcc_n_r':None, 'ewcc_n_fc':None, 
-                                             'cvat_r':None, 'cvat_fc':None, 'cpi_r':None, 'cpi_fc':None, 'ccpi_a_r':None, 
-                                             'ccpi_a_fc':None, 'ccpi_a_vat_r':None, 'ccpi_a_vat_fc':None, 'ccpi_a_vat_ew_r':None, 
-                                             'ccpi_a_vat_ew_fc':None, 'cp_pp_r':None, 'cp_pp_fc':None, 'pp_pp_r':None, 
-                                             'pp_pp_fc':None, 'r':None, 'm':None, 'typevalue':None})
+                financialInfos = FinancialInfo.objects.filter(contractid__exact=contractId, dateid__exact=dateId)
+                # FinancialInvoice.objects.update_or_create(contractid=contract ,dateid=date, defaults={'senddate':None, 'invoicetype':'', 'alino':None,
+                #                              'almino':None, 'aci_g_r':None, 'aci_g_fc':None, 'aca_g_r':None, 'aca_g_fc':None, 
+                #                              'ew_g_r':None, 'ew_g_fc':None, 'icc_g_r':None, 'icc_g_fc':None, 'acc_g_r':None, 
+                #                              'acc_g_fc':None, 'ewcc_g_r':None, 'ewcc_g_fc':None, 'aci_n_r':None, 'aci_n_fc':None,
+                #                              'aca_n_r':None, 'aca_n_fc':None, 'ew_n_r':None, 'ew_n_fc':None, 'icc_n_r':None, 
+                #                              'icc_n_fc':None, 'acc_n_r':None, 'acc_n_fc':None, 'ewcc_n_r':None, 'ewcc_n_fc':None, 
+                #                              'cvat_r':None, 'cvat_fc':None, 'cpi_r':None, 'cpi_fc':None, 'ccpi_a_r':None, 
+                #                              'ccpi_a_fc':None, 'ccpi_a_vat_r':None, 'ccpi_a_vat_fc':None, 'ccpi_a_vat_ew_r':None, 
+                #                              'ccpi_a_vat_ew_fc':None, 'cp_pp_r':None, 'cp_pp_fc':None, 'pp_pp_r':None, 
+                #                              'pp_pp_fc':None, 'r':None, 'm':None, 'typevalue':None})
+                FinancialInvoice.objects.update_or_create(contractid=contract ,dateid=date, r=True, defaults={ 'senddate': datetime.now(), 'invoicetype':'', 'alino':None, 'almino':None, 
+                                        'aci_g_r':0, 'aci_n_r':financialInfos[0].lastverifiedinvoice_r if financialInfos and len(financialInfos) > 0 else 0, 
+                                        'aci_g_fc':None, 'aci_n_fc':None,
+                                        'aca_g_r':0, 'aca_n_r':financialInfos[0].lastverifiedadjustmentinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'aca_g_fc':None, 'aca_n_fc':None,
+                                        'ew_g_r':0, 'ew_n_r':financialInfos[0].lastverifiedextraworkinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ew_g_fc':None, 'ew_n_fc':None,
+                                        'icc_g_r':0, 'icc_n_r':financialInfos[0].lastclaimedinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'icc_g_fc':None, 'icc_n_fc':None,
+                                        'acc_g_r':0, 'acc_n_r':financialInfos[0].lastclaimedadjustmentinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'acc_g_fc':None, 'acc_n_fc':None,
+                                        'ewcc_g_r':0, 'ewcc_n_r':financialInfos[0].lastclaimedextraworkinvoice_r if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ewcc_g_fc':None, 'ewcc_n_fc':None,
+                                        'cvat_r':0, 'cvat_fc':None, 'cpi_r':0, 'cpi_fc':None, 'ccpi_a_r':0, 'ccpi_a_fc':None,
+                                        'ccpi_a_vat_r':0, 'ccpi_a_vat_fc':None, 'ccpi_a_vat_ew_r':0, 'ccpi_a_vat_ew_fc':None, 
+                                        'cp_pp_r':0, 'cp_pp_fc':None, 'pp_pp_r':0, 'pp_pp_fc':None, 'm':True, 'typevalue':None})
+
+                FinancialInvoice.objects.update_or_create(contractid=contract ,dateid=date, r=False, defaults={ 'senddate': datetime.now(), 'invoicetype':'', 'alino':None, 'almino':None, 
+                                        'aci_g_fc':0, 'aci_n_fc':financialInfos[0].lastverifiedinvoice_fc if financialInfos and len(financialInfos) > 0 else 0, 
+                                        'aci_g_r':None, 'aci_n_r':None,
+                                        'aca_g_fc':0, 'aca_n_fc':financialInfos[0].lastverifiedadjustmentinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'aca_g_r':None, 'aca_n_r':None,
+                                        'ew_g_fc':0, 'ew_n_fc':financialInfos[0].lastverifiedextraworkinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ew_g_r':None, 'ew_n_r':None,
+                                        'icc_g_fc':0, 'icc_n_fc':financialInfos[0].lastclaimedinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'icc_g_r':None, 'icc_n_r':None,
+                                        'acc_g_fc':0, 'acc_n_fc':financialInfos[0].lastclaimedadjustmentinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'acc_g_r':None, 'acc_n_r':None,
+                                        'ewcc_g_fc':0, 'ewcc_n_fc':financialInfos[0].lastclaimedextraworkinvoice_fc if financialInfos and len(financialInfos) > 0 else 0,
+                                        'ewcc_g_r':None, 'ewcc_n_r':None,
+                                        'cvat_fc':0, 'cvat_r':None, 'cpi_fc':0, 'cpi_r':None, 'ccpi_a_fc':0, 'ccpi_a_r':None,
+                                        'ccpi_a_vat_fc':0, 'ccpi_a_vat_r':None, 'ccpi_a_vat_ew_fc':0, 'ccpi_a_vat_ew_r':None, 
+                                        'cp_pp_fc':0, 'cp_pp_r':None, 'pp_pp_fc':0, 'pp_pp_r':None, 'm':True, 'typevalue':None})
             
             financialInvoices = FinancialInvoice.objects.filter(contractid__exact=contractId, dateid__lte=dateId).order_by('dateid')
-            serializer = FinancialInvoiceSerializer(instance=financialInvoices, many=True)
+            serializer = FinancialInvoiceSerializer(data=financialInvoices, many=True)
+            serializer.is_valid()
             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status": "error", "data": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
